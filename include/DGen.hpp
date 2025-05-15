@@ -59,27 +59,13 @@ private:
 
 };
 
-class DTable{
-public:
-    DTable();
-private:
-        
-};
-
-class DColumn{
-public:
-    DColumn();
-private:
-            
-};
-
 class DString{
-public:
-    DString();
-private:
-                
+    public:
+        DString();
+    private:
+                    
 };
-
+    
 /*
  * DSubStr()
  * type:
@@ -88,11 +74,12 @@ private:
  * 2 - Use a capital letter. Otherwise, everything is in lowercase (if !3).
  * 3 - Use an Up Register.
  * 4 - Static number of duplicates. Otherwise, the percentage of duplicates.
- * 5 - Static length. Otherwise, in the range (defoult 3-10).
- * 6 - 
+ * 5 - Uniqe strings. Otherwise, non check duplicate.
+ * 6 - Static length. Otherwise, in the range (defoult 3-10).
  * 7 - 
  * duplicates:
  * if < 1 - count of duplicates
+ * else if == 0 - unique strings
  * else - percent of duplicates
  * length:
  * if min ==  0 - strictly maximum length
@@ -102,26 +89,25 @@ private:
 class DSubStr{
 public:
     DSubStr();
-    void set_len(unsigned short len_min, unsigned short len_max);
-    void set_len(unsigned short length);
-    void set_alph(std::string pattern);
-    void set_separator(std::string sep);
-    void set_duplicates(float val);
-    void set_static_str(std::string str);
-    void use_CL();
-    void use_UR();
-    void show_alph();
-    std::string get_alph();
-    uint8_t get_type();
+    void setLen(unsigned short len_min, unsigned short len_max);
+    void setLen(unsigned short length);
+    void setAlph(std::string pattern);
+    void setSeparator(std::string sep);
+    void setDuplicates(float val);
+    void setStaticStr(std::string str);
+    void useCapitalLetters();
+    void useUpperRegister();
+    void showAlph();
+    std::string getAlph();
+    uint8_t getInfo();
 private:
-private:
-    unsigned short len_min;
-    unsigned short len_max;
-    uint8_t type;
-    float duplicates;
-    std::string separator;
-    std::string alphabet;
-    std::string def_alph;
+    unsigned short m_lenMin;
+    unsigned short m_lenMax;
+    uint8_t m_info;
+    float m_duplicates;
+    std::string m_separator;
+    std::string m_alphabet;
+    std::string m_defAlph;
 };
 
 class DNum{
@@ -144,5 +130,74 @@ public:
 private:
                     
 };
+
+template<typename T>
+concept DType = 
+std::is_same_v<T, DString> ||
+std::is_same_v<T, DSubStr> ||
+std::is_same_v<T, DNum> ||
+std::is_same_v<T, DFloat> ||
+std::is_same_v<T, DDate>;
+
+/*
+ * DColumn();
+ * type: Register of state.
+ * 0 - string
+ * 1 - number
+ * 2 - float
+ * 3 - date
+ * 4
+ * 5
+ * 6
+ * 7
+ * 8 - Static number of duplicates. Otherwise, the percentage of duplicates.
+ * 9 - Unique records.
+ * 10-15 - Zero. 
+ * num_rec: The number of entries in the column.
+ * 
+ * 
+*/
+template<DType T> 
+class DColumn{
+public:
+    DColumn();
+    void setName(std::string str);
+    void setNumRec(uint32_t num);
+    void setSize(uint32_t bytes);
+    void setDuplicates(float val);
+    void setDtype(T dtype);
+    void toStr();
+    std::string getName();
+    uint32_t getNumRec();
+    uint16_t getInfo();
+    uint32_t getSize();
+    float getDuplicates();
+    T getDType();
+private:
+    std::string m_name;
+    uint32_t m_numRec;
+    uint16_t m_info;
+    uint32_t m_size;
+    float m_duplicates;
+    T m_dType;
+};
+
+// template<DType T>
+// class DTable{
+// public:
+//     DTable();
+//     void set_name(std::string str);
+//     void add_col(DColumn<T> col);
+//     void show_name();
+//     void show_cols();
+//     std::vector <DColumn<T>> cols();
+//     DColumn<T> col(int index);
+//     DColumn<T> col(std::string name);
+//     std::string name();
+
+// private:
+//     std::string name;
+//     std::vector <DColumn<T>> cols;
+// };
         
 #endif // DGEN_H
