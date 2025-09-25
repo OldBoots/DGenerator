@@ -1,0 +1,6 @@
+# Objets files
+*.o
+# Executable files
+app
+# IDE project files
+*.vscode
