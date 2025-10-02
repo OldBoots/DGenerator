@@ -88,8 +88,9 @@ public:
     size_t isUpperCase();
     const std::vector<std::string>& genRows();
 private:
-    void genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_int_distribution<>& distrLength, 
-        std::uniform_real_distribution<>& distrPrecent, std::set<std::string>& set);
+    void genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
+        size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss);
+    void showDebug();
     bool isValidProperties();
 private:
     size_t m_minLength;

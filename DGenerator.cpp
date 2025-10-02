@@ -165,17 +165,11 @@ Int::Int() : m_min(0), m_max(0)
 Int::Int(std::string name, int min, int max, size_t countRows, float duplicates, bool flgShuffle, bool flgDebug) : 
 Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
-    if(m_flgDebug){
-        showDebug();
-    }
 }
 
 Int::Int(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
 Column(name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
-    if(m_flgDebug){
-        showDebug();
-    }
 }
 
 void Int::setRange(int min, int max)
@@ -270,6 +264,7 @@ const std::vector<std::string>& Int::genRows()
     size_t maxCountMiss = 10000;
     size_t enumVal = m_min;
     if(m_flgDebug){
+        showDebug();
         std::cout << "Properties validation\t- OK" << std::endl;
         std::cout << "Generation\t\t- START" << std::endl;
     }
@@ -373,15 +368,23 @@ size_t Word::isUpperCase()
     return m_flgUpperCase;
 }
 
-void Word::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_int_distribution<>& distrLength, 
-    std::uniform_real_distribution<>& distrPrecent, std::set<std::string>& set)
+void Word::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
+        size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss)
 {
     int numShift = (m_flgUpperCase ? 65 : 97);
-    size_t length = distrLength(m_gen);
-    std::string word;
-    word.resize(length);
+    size_t length;
     int numChar;
     while(true){
+        std::uniform_int_distribution<> distrLength(minLength, m_maxLength);
+        length = distrLength(m_gen);
+        std::string word;
+        word.resize(length);
+        if(miss >= maxCountMiss){
+            miss = 0;
+            if(minLength != m_maxLength){
+                minLength++;
+            }
+        }
         numChar = distrLetter(m_gen) + numShift;
         if(!m_flgUpperCase && m_capitalLetter != 0 && distrPrecent(m_gen) > (1 - m_capitalLetter)){
             numChar -= 32;
@@ -393,10 +396,22 @@ void Word::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_in
         }
         if(!set.contains(word)){
             set.insert(word);
+            m_vecRows.push_back(word);
             break;
+        }else{
+            miss++;
         }
     }
-    m_vecRows.push_back(word);
+}
+
+void Word::showDebug()
+{
+    std::cout << std::endl << std::endl;
+    std::cout << "Column type\t\t- WORD" << std::endl;
+    showGeneralInfo();
+    std::cout << "Word length range\t- " << m_minLength << " - " << m_maxLength << std::endl;
+    std::cout << "Proportion of CL\t- " << m_capitalLetter << std::endl;
+    std::cout << "Is upper case enable\t- " << (m_flgUpperCase ? "YES" : "NO") << std::endl;
 }
 
 bool Word::isValidProperties()
@@ -411,7 +426,7 @@ bool Word::isValidProperties()
         flg = isValidDuplicate(errMsg);
         if(m_duplicates != 1){
             size_t maxCountDupl = m_countDupl / 2;
-            if(pow(26, m_maxLength - m_minLength)  < m_countRows - maxCountDupl){
+            if(pow(26, m_maxLength)  < m_countRows - maxCountDupl){
                 errMsg += "\n\tThe number of possible options is less than necessary to generate this number of rows.";
                 flg = false;
             }
@@ -433,19 +448,27 @@ const std::vector<std::string>& Word::genRows()
     m_vecRows.clear();
     std::uniform_int_distribution<> distrLetter(0, 25);
     std::uniform_real_distribution<> distrPercent(0.0, 1.0);
-    std::uniform_int_distribution<> distrLength(m_minLength, m_maxLength);
     std::set<std::string> setUnique;
+    size_t miss = 0;
+    size_t maxCountMiss = 500000;
+    size_t minLength = m_minLength;
+    if(m_flgDebug){
+        showDebug();
+        std::cout << "Properties validation\t- OK" << std::endl;
+        std::cout << "Generation\t\t- START" << std::endl;
+    }
+    auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
-            genWord(distrLetter, distrLength, distrPercent, setUnique);
+            genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
         }
     }else{
         if(m_duplicates == 1){
-            genWord(distrLetter, distrLength, distrPercent, setUnique);
+            genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
             m_vecRows.resize(m_countRows, m_vecRows[0]);
         }else{
             while(setUnique.size() < m_countUniq){
-                genWord(distrLetter, distrLength, distrPercent, setUnique);
+                genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
             }
             size_t stillDupl = m_countDupl;
             while(stillDupl > 0){
@@ -453,12 +476,21 @@ const std::vector<std::string>& Word::genRows()
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl--;
                 }else{
-                    genWord(distrLetter, distrLength, distrPercent, setUnique);
+                    genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl -= 2;
                 }
             }
         }
+    }
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    if(m_flgShuffle){
+        shuffleRows();
+    }
+    if(m_flgDebug){
+        std::cout << "Generation\t\t- FINISHED" << std::endl;
+        std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
     }
     return m_vecRows;
 }
