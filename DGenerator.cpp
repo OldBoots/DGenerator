@@ -1,6 +1,6 @@
 #include "DGenerator.hpp"
 
-//___________Column______________
+//______________Column______________
 
 Column::Column() : m_name(""), m_flgUnRegDupl(false), m_flgShuffle(false), m_duplicates(0), m_countDupl(0), 
 m_countRows(0), m_rd(), m_gen(m_rd())
@@ -14,7 +14,7 @@ m_countRows(countRows), m_rd(), m_gen(m_rd())
     calcUniqAndDupl();
 }
 
-Column::Column(size_t countRows, std::string name, bool flgShuffle, bool flgDebug) : m_name(name), 
+Column::Column(std::string name, size_t countRows, bool flgShuffle, bool flgDebug) : m_name(name), 
 m_flgUnRegDupl(true), m_flgShuffle(flgShuffle), m_flgDebug(flgDebug), m_duplicates(0), m_countRows(countRows), m_rd(), 
 m_gen(m_rd())
 {
@@ -156,29 +156,29 @@ void Column::calcUniqAndDupl()
     m_countUniq = m_countRows - m_countDupl;
 }
 
-//___________Int______________
+//______________Int______________
 
 Int::Int() : m_min(0), m_max(0)
 {
 }
 
-Int::Int(std::string name, size_t min, size_t max, size_t countRows, float duplicates, bool flgShuffle, 
-    bool flgDebug) : Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
+Int::Int(std::string name, int min, int max, size_t countRows, float duplicates, bool flgShuffle, bool flgDebug) : 
+Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
     if(m_flgDebug){
         showDebug();
     }
 }
 
-Int::Int(size_t min, size_t max, size_t countRows, std::string name, bool flgShuffle, 
-    bool flgDebug) : Column(countRows, name, flgShuffle, flgDebug), m_min(min), m_max(max)
+Int::Int(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
+Column(name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
     if(m_flgDebug){
         showDebug();
     }
 }
 
-void Int::setRange(size_t min, size_t max)
+void Int::setRange(int min, int max)
 {
     m_min = min;
     m_max = max;
@@ -201,7 +201,15 @@ bool Int::isValidProperties()
     if(!m_flgUnRegDupl){
         flg = isValidDuplicate(errMsg);
         size_t maxCountDupl = m_countDupl / 2;
-        if(static_cast<size_t>(m_max - m_min) < m_countRows - maxCountDupl){
+        if(m_max < m_min){
+            errMsg += "\n\tIncorrect range.";
+            flg = false;
+        }
+        int range = m_max - m_min;
+        if(range < 0){
+            range = -range;
+        }
+        if(static_cast<size_t>(range) < m_countRows - maxCountDupl){
             errMsg += "\n\tThe number of unique set options is not enough.";
             flg = false;
         }
@@ -256,7 +264,8 @@ const std::vector<std::string>& Int::genRows()
         return m_vecRows;
     }
     m_vecRows.clear();
-    std::uniform_int_distribution<int> distrVal(m_min, m_max);
+    std::uniform_int_distribution<int> distrValue(m_min, m_max);
+    std::uniform_real_distribution<float> distrPercent(0.0, 1.0);
     size_t miss = 0;
     size_t maxCountMiss = 10000;
     size_t enumVal = m_min;
@@ -267,25 +276,23 @@ const std::vector<std::string>& Int::genRows()
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
-            m_vecRows.push_back(std::to_string(distrVal(m_gen)));
+            m_vecRows.push_back(std::to_string(distrValue(m_gen)));
         }
     }else{
         if(m_duplicates == 1){
-            m_vecRows.resize(m_countRows, std::to_string(distrVal(m_gen)));
+            m_vecRows.resize(m_countRows, std::to_string(distrValue(m_gen)));
         }else{
             std::set<int> setUnique;
             while(setUnique.size() < m_countUniq){
-                genValue(distrVal, setUnique, enumVal, miss, maxCountMiss);
-                // std::cout << ".";
+                genValue(distrValue, setUnique, enumVal, miss, maxCountMiss);
             }
             size_t stillDupl = m_countDupl;
-            std::uniform_real_distribution<float> distrChange(0.0, 1.0);
             while(stillDupl > 0){
-                if((distrChange(m_gen) > 0.7 || stillDupl == 1) && stillDupl != m_countDupl){
+                if((distrPercent(m_gen) > 0.7 || stillDupl == 1) && stillDupl != m_countDupl){
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl--;
                 }else{
-                    genValue(distrVal, setUnique, enumVal, miss, maxCountMiss);
+                    genValue(distrValue, setUnique, enumVal, miss, maxCountMiss);
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl -= 2;
                 }
@@ -301,6 +308,157 @@ const std::vector<std::string>& Int::genRows()
         std::cout << "Generation\t\t- FINISHED" << std::endl;
         std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
         std::cout << "Using an enumeration\t- " << (miss >= maxCountMiss ? "YES" : "NO") << std::endl;
+    }
+    return m_vecRows;
+}
+
+//______________Word______________
+
+Word::Word() : Column(), m_minLength(0), m_maxLength(0), m_capitalLetter(0), m_flgUpperCase(0)
+{
+}
+
+Word::Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, float duplicates, 
+    float capitalLetter, bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
+    Column(name, countRows, duplicates, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
+    m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
+{    
+}
+
+Word::Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, float capitalLetter, 
+    bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
+    Column(name, countRows, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
+    m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
+{
+}
+
+void Word::setRange(size_t minLength, size_t maxLength)
+{
+    m_minLength = minLength;
+    m_maxLength = maxLength;
+}
+
+void Word::setLength(size_t length)
+{
+    m_minLength = m_maxLength = length;
+}
+
+void Word::setUpperCase(bool flg)
+{
+    m_flgUpperCase = flg;
+}
+
+void Word::setCapitalLetter(float capitalLetter)
+{
+    m_capitalLetter = capitalLetter;
+}
+
+size_t Word::getMinLength()
+{
+    return m_minLength;
+}
+
+size_t Word::getMaxLength()
+{
+    return m_maxLength;
+}
+
+float Word::getCapitalLetter()
+{
+    return m_capitalLetter;
+}
+
+size_t Word::isUpperCase()
+{
+    return m_flgUpperCase;
+}
+
+void Word::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_int_distribution<>& distrLength, 
+    std::uniform_real_distribution<>& distrPrecent, std::set<std::string>& set)
+{
+    int numShift = (m_flgUpperCase ? 65 : 97);
+    size_t length = distrLength(m_gen);
+    std::string word;
+    word.resize(length);
+    int numChar;
+    while(true){
+        numChar = distrLetter(m_gen) + numShift;
+        if(!m_flgUpperCase && m_capitalLetter != 0 && distrPrecent(m_gen) > (1 - m_capitalLetter)){
+            numChar -= 32;
+        }
+        word[0] = static_cast<char>(numChar);
+        for(size_t i = 1; i < length; i++){
+            numChar = distrLetter(m_gen) + numShift;
+            word[i] = static_cast<char>(numChar);
+        }
+        if(!set.contains(word)){
+            set.insert(word);
+            break;
+        }
+    }
+    m_vecRows.push_back(word);
+}
+
+bool Word::isValidProperties()
+{
+    std::string errMsg = "\nIncorrect properties: ";
+    bool flg = true;
+    if(m_maxLength < m_minLength || m_maxLength == 0){
+        errMsg += "\n\tIncorrect range.";
+        flg = false;
+    }
+    if(!m_flgUnRegDupl){
+        flg = isValidDuplicate(errMsg);
+        if(m_duplicates != 1){
+            size_t maxCountDupl = m_countDupl / 2;
+            if(pow(26, m_maxLength - m_minLength)  < m_countRows - maxCountDupl){
+                errMsg += "\n\tThe number of possible options is less than necessary to generate this number of rows.";
+                flg = false;
+            }
+        }
+    }
+    if(!flg){
+        m_errMesage += errMsg;
+    }
+    return flg;
+}
+
+const std::vector<std::string>& Word::genRows()
+{
+    m_errMesage.clear();
+    if(!isValidProperties()){
+        std::cout << "Word: genRows: Error: " << m_errMesage << std::endl;
+        return m_vecRows;
+    }
+    m_vecRows.clear();
+    std::uniform_int_distribution<> distrLetter(0, 25);
+    std::uniform_real_distribution<> distrPercent(0.0, 1.0);
+    std::uniform_int_distribution<> distrLength(m_minLength, m_maxLength);
+    std::set<std::string> setUnique;
+    if(m_flgUnRegDupl){
+        for(size_t i = 0; i < m_countRows; i++){
+            genWord(distrLetter, distrLength, distrPercent, setUnique);
+        }
+    }else{
+        if(m_duplicates == 1){
+            genWord(distrLetter, distrLength, distrPercent, setUnique);
+            m_vecRows.resize(m_countRows, m_vecRows[0]);
+        }else{
+            while(setUnique.size() < m_countUniq){
+                genWord(distrLetter, distrLength, distrPercent, setUnique);
+            }
+            size_t stillDupl = m_countDupl;
+            while(stillDupl > 0){
+                if((distrPercent(m_gen) > 0.7 || stillDupl == 1) && stillDupl != m_countDupl){
+                    m_vecRows.push_back(m_vecRows.back());
+                    stillDupl--;
+                }else{
+                    genWord(distrLetter, distrLength, distrPercent, setUnique);
+                    m_vecRows.push_back(m_vecRows.back());
+                    stillDupl -= 2;
+                }
+            }
+        }
     }
     return m_vecRows;
 }
