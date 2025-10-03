@@ -4,3 +4,5 @@
 app
 # IDE project files
 *.vscode
+# SRC files (main.cpp)
+main.cpp

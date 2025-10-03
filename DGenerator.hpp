@@ -14,17 +14,17 @@ class Column
 {
 public:
     Column();
-    Column(std::string name, size_t countRows, float duplicates, bool flgShuffle, bool flgDebug);
+    Column(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     Column(std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
     void setName(std::string name);
     void setCountRows(size_t count);
-    void setDuplicate(float val);
+    void setDuplicate(double val);
     void setFlgShuffle(bool flg);
     void setFlgUnRegDupl(bool flg);
     void setFlgDebug(bool flg);
     std::string getName();
     size_t getCountRows();
-    float getDuplicate();
+    double getDuplicate();
     bool isShuffleEnabled();
     bool isDuplRegDisabled();
     const std::vector<std::string>& getVecRows() const;
@@ -42,7 +42,7 @@ protected:
     bool m_flgUnRegDupl;
     bool m_flgShuffle;
     bool m_flgDebug;
-    float m_duplicates;
+    double m_duplicates;
     size_t m_countDupl;
     size_t m_countUniq;
     size_t m_countRows;
@@ -57,7 +57,7 @@ class Int : public Column
 {
 public:
     Int();
-    Int(std::string name, int min, int max, size_t countRows, float duplicates, bool flgShuffle, bool flgDebug);
+    Int(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     Int(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug);
     const std::vector<std::string>& genRows();
     void setRange(int min, int max);
@@ -72,19 +72,38 @@ private:
     int m_max;
 };
 
+class Float : public Column
+{
+public:
+    Float();
+    Float(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+    Float(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug);
+    const std::vector<std::string>& genRows();
+    void setRange(double min, double max);
+    double getMin();
+    double getMax();
+private:
+    bool isValidProperties();
+    void genValue(std::uniform_real_distribution<>& distr, std::set<double>& set);
+    void showDebug();
+private:
+    double m_min;
+    double m_max;
+};
+
 class Word : public Column
 {
 public:
     Word();
-    Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, float duplicates, float capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
-    Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, float capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
+    Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, double capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
+    Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
     void setRange(size_t minLength, size_t maxLength);
     void setLength(size_t length);
     void setUpperCase(bool flg);
-    void setCapitalLetter(float capitalLetter);
+    void setCapitalLetter(double capitalLetter);
     size_t getMinLength();
     size_t getMaxLength();
-    float getCapitalLetter();
+    double getCapitalLetter();
     size_t isUpperCase();
     const std::vector<std::string>& genRows();
 private:
@@ -95,7 +114,7 @@ private:
 private:
     size_t m_minLength;
     size_t m_maxLength;
-    float m_capitalLetter;
+    double m_capitalLetter;
     bool m_flgUpperCase;
 };
 
