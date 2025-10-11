@@ -8,7 +8,19 @@
 #include <set>
 #include <random>
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 #include <cmath>
+
+struct DateComponents
+{
+    int year;
+    unsigned month;
+    unsigned day;
+    int hour;
+    int minute;
+    int second;
+};
 
 class Column
 {
@@ -53,12 +65,12 @@ private:
     void calcUniqAndDupl();
 };
 
-class Int : public Column
+class GenInt : public Column
 {
 public:
-    Int();
-    Int(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
-    Int(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug);
+    GenInt();
+    GenInt(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+    GenInt(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug);
     const std::vector<std::string>& genRows();
     void setRange(int min, int max);
     int getMin();
@@ -72,12 +84,12 @@ private:
     int m_max;
 };
 
-class Float : public Column
+class GenFloat : public Column
 {
 public:
-    Float();
-    Float(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
-    Float(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug);
+    GenFloat();
+    GenFloat(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+    GenFloat(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug);
     const std::vector<std::string>& genRows();
     void setRange(double min, double max);
     double getMin();
@@ -91,12 +103,12 @@ private:
     double m_max;
 };
 
-class Word : public Column
+class GenWord : public Column
 {
 public:
-    Word();
-    Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, double capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
-    Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
+    GenWord();
+    GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, double capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
+    GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, bool m_flgUpperCase, bool flgShuffle, bool flgDebug);
     void setRange(size_t minLength, size_t maxLength);
     void setLength(size_t length);
     void setUpperCase(bool flg);
@@ -116,6 +128,31 @@ private:
     size_t m_maxLength;
     double m_capitalLetter;
     bool m_flgUpperCase;
+};
+
+class GenDateTime : public Column
+{
+public:
+    enum class DateFormat{DATE, TIME, DATETIME};
+    GenDateTime();
+    GenDateTime(GenDateTime::DateFormat format);
+    void setRange(std::string begin, std::string end);
+    void setFormat(DateFormat format);
+    std::chrono::sys_seconds getBegin();
+    std::chrono::sys_seconds getEnd();
+    GenDateTime::DateFormat getFormat();
+    const std::vector<std::string>& genRows();
+private:
+    std::string dateToStr(const std::chrono::sys_seconds& dateTime);
+    std::chrono::sys_seconds strToDate(const std::string& dateTime);
+    bool isValidProperties();
+private:
+    DateFormat m_format;
+    std::string m_DateFormatGet;
+    std::string m_DateFormatGive;
+    std::chrono::sys_seconds m_begin;
+    std::chrono::sys_seconds m_end;
+    std::vector<std::string> m_vecRows;
 };
 
 #endif

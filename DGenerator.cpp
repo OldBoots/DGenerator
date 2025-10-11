@@ -1,5 +1,22 @@
 #include "DGenerator.hpp"
 
+namespace
+{
+DateComponents extractDateComponents(const std::chrono::sys_seconds &dateTime)
+{
+    std::chrono::year_month_day ymd = floor<std::chrono::days>(dateTime);
+    std::chrono::hh_mm_ss hms(dateTime - std::chrono::sys_days(ymd));
+    return {
+        static_cast<int>(ymd.year()),
+        static_cast<unsigned>(ymd.month()),
+        static_cast<unsigned>(ymd.day()),
+        static_cast<int>(hms.hours().count()),
+        static_cast<int>(hms.minutes().count()),
+        static_cast<int>(hms.seconds().count())
+    };
+}
+}
+
 //______________Column______________
 
 Column::Column() : m_name(""), m_flgUnRegDupl(false), m_flgShuffle(false), m_duplicates(0), m_countDupl(0), 
@@ -158,37 +175,37 @@ void Column::calcUniqAndDupl()
 
 //______________Int______________
 
-Int::Int() : Column(), m_min(0), m_max(0)
+GenInt::GenInt() : Column(), m_min(0), m_max(0)
 {
 }
 
-Int::Int(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+GenInt::GenInt(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
 Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
-Int::Int(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
+GenInt::GenInt(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
 Column(name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
-void Int::setRange(int min, int max)
+void GenInt::setRange(int min, int max)
 {
     m_min = min;
     m_max = max;
 }
 
-int Int::getMin()
+int GenInt::getMin()
 {
     return m_min;
 }
 
-int Int::getMax()
+int GenInt::getMax()
 {
     return m_max;
 }
 
-bool Int::isValidProperties()
+bool GenInt::isValidProperties()
 {
     std::string errMsg = "\nIncorrect properties: ";
     bool flg = true;
@@ -214,7 +231,7 @@ bool Int::isValidProperties()
     return flg;
 }
 
-void Int::genValue(std::uniform_int_distribution<>& distr, std::set<int>& set, size_t& enumeration, size_t& miss, size_t maxCountMiss)
+void GenInt::genValue(std::uniform_int_distribution<>& distr, std::set<int>& set, size_t& enumeration, size_t& miss, size_t maxCountMiss)
 {
     
     int value;
@@ -242,7 +259,7 @@ void Int::genValue(std::uniform_int_distribution<>& distr, std::set<int>& set, s
     m_vecRows.push_back(std::to_string(value));
 }
 
-void Int::showDebug()
+void GenInt::showDebug()
 {
     std::cout << std::endl << std::endl;
     std::cout << "Column type\t\t- INT" << std::endl;
@@ -250,11 +267,11 @@ void Int::showDebug()
     std::cout << "Range values\t\t- " << m_min << " - " << m_max << std::endl;
 }
 
-const std::vector<std::string>& Int::genRows()
+const std::vector<std::string>& GenInt::genRows()
 {
     m_errMesage.clear();
     if(!isValidProperties()){
-        std::cout << "Int: genRows: Error: " << m_errMesage << std::endl;
+        std::cout << "GenInt: genRows: Error: " << m_errMesage << std::endl;
         return m_vecRows;
     }
     m_vecRows.clear();
@@ -309,25 +326,25 @@ const std::vector<std::string>& Int::genRows()
 
 //______________Float______________
 
-Float::Float() : Column(), m_min(0), m_max(0)
+GenFloat::GenFloat() : Column(), m_min(0), m_max(0)
 {
 }
 
-Float::Float(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+GenFloat::GenFloat(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
 Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
-Float::Float(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug) : 
+GenFloat::GenFloat(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug) : 
 Column(name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
-const std::vector<std::string> &Float::genRows()
+const std::vector<std::string> &GenFloat::genRows()
 {
     m_errMesage.clear();
     if(!isValidProperties()){
-        std::cout << "Float: genRows: Error: " << m_errMesage << std::endl;
+        std::cout << "GenFloat: genRows: Error: " << m_errMesage << std::endl;
         return m_vecRows;
     }
     m_vecRows.clear();
@@ -376,23 +393,23 @@ const std::vector<std::string> &Float::genRows()
     return m_vecRows;
 }
 
-void Float::setRange(double min, double max)
+void GenFloat::setRange(double min, double max)
 {
     m_min = min;
     m_max = max;
 }
 
-double Float::getMin()
+double GenFloat::getMin()
 {
     return m_min;
 }
 
-double Float::getMax()
+double GenFloat::getMax()
 {
     return m_max;
 }
 
-bool Float::isValidProperties()
+bool GenFloat::isValidProperties()
 {
     std::string errMsg = "\nIncorrect properties: ";
     bool flg = true;
@@ -409,7 +426,7 @@ bool Float::isValidProperties()
     return flg;
 }
 
-void Float::genValue(std::uniform_real_distribution<double>& distr, std::set<double>& set)
+void GenFloat::genValue(std::uniform_real_distribution<double>& distr, std::set<double>& set)
 {
     double value;
     while (true)
@@ -423,7 +440,7 @@ void Float::genValue(std::uniform_real_distribution<double>& distr, std::set<dou
     m_vecRows.push_back(std::to_string(value));
 }
 
-void Float::showDebug()
+void GenFloat::showDebug()
 {
     std::cout << std::endl << std::endl;
     std::cout << "Column type\t\t- FLOAT" << std::endl;
@@ -433,66 +450,66 @@ void Float::showDebug()
 
 //______________Word______________
 
-Word::Word() : Column(), m_minLength(0), m_maxLength(0), m_capitalLetter(0), m_flgUpperCase(0)
+GenWord::GenWord() : Column(), m_minLength(0), m_maxLength(0), m_capitalLetter(0), m_flgUpperCase(0)
 {
 }
 
-Word::Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, 
+GenWord::GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, 
     double capitalLetter, bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
     Column(name, countRows, duplicates, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {    
 }
 
-Word::Word(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, 
+GenWord::GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, 
     bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
     Column(name, countRows, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {
 }
 
-void Word::setRange(size_t minLength, size_t maxLength)
+void GenWord::setRange(size_t minLength, size_t maxLength)
 {
     m_minLength = minLength;
     m_maxLength = maxLength;
 }
 
-void Word::setLength(size_t length)
+void GenWord::setLength(size_t length)
 {
     m_minLength = m_maxLength = length;
 }
 
-void Word::setUpperCase(bool flg)
+void GenWord::setUpperCase(bool flg)
 {
     m_flgUpperCase = flg;
 }
 
-void Word::setCapitalLetter(double capitalLetter)
+void GenWord::setCapitalLetter(double capitalLetter)
 {
     m_capitalLetter = capitalLetter;
 }
 
-size_t Word::getMinLength()
+size_t GenWord::getMinLength()
 {
     return m_minLength;
 }
 
-size_t Word::getMaxLength()
+size_t GenWord::getMaxLength()
 {
     return m_maxLength;
 }
 
-double Word::getCapitalLetter()
+double GenWord::getCapitalLetter()
 {
     return m_capitalLetter;
 }
 
-size_t Word::isUpperCase()
+size_t GenWord::isUpperCase()
 {
     return m_flgUpperCase;
 }
 
-void Word::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
+void GenWord::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
         size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss)
 {
     int numShift = (m_flgUpperCase ? 65 : 97);
@@ -528,17 +545,17 @@ void Word::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_re
     }
 }
 
-void Word::showDebug()
+void GenWord::showDebug()
 {
     std::cout << std::endl << std::endl;
     std::cout << "Column type\t\t- WORD" << std::endl;
     showGeneralInfo();
-    std::cout << "Word length range\t- " << m_minLength << " - " << m_maxLength << std::endl;
+    std::cout << "GenWord length range\t- " << m_minLength << " - " << m_maxLength << std::endl;
     std::cout << "Proportion of CL\t- " << m_capitalLetter << std::endl;
     std::cout << "Is upper case enable\t- " << (m_flgUpperCase ? "YES" : "NO") << std::endl;
 }
 
-bool Word::isValidProperties()
+bool GenWord::isValidProperties()
 {
     std::string errMsg = "\nIncorrect properties: ";
     bool flg = true;
@@ -562,11 +579,11 @@ bool Word::isValidProperties()
     return flg;
 }
 
-const std::vector<std::string>& Word::genRows()
+const std::vector<std::string>& GenWord::genRows()
 {
     m_errMesage.clear();
     if(!isValidProperties()){
-        std::cout << "Word: genRows: Error: " << m_errMesage << std::endl;
+        std::cout << "GenWord: genRows: Error: " << m_errMesage << std::endl;
         return m_vecRows;
     }
     m_vecRows.clear();
@@ -617,4 +634,136 @@ const std::vector<std::string>& Word::genRows()
         std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
     }
     return m_vecRows;
+}
+
+//______________Date______________
+
+GenDateTime::GenDateTime()
+{
+    setFormat(GenDateTime::DateFormat::DATETIME);
+}
+
+GenDateTime::GenDateTime(GenDateTime::DateFormat format)
+{
+    setFormat(format);
+}
+
+void GenDateTime::setRange(std::string begin, std::string end)
+{
+    m_begin = strToDate(begin);
+    m_end = strToDate(end);
+}
+
+void GenDateTime::setFormat(DateFormat format)
+{
+    m_format = format;
+    switch (m_format)
+    {
+    case DateFormat::DATE:
+        m_DateFormatGet = "%Y-%m-%d";
+        m_DateFormatGive = "%d-%d-%d";
+        break;
+    case DateFormat::TIME:
+        m_DateFormatGet = "%H:%M:%S";
+        m_DateFormatGive = "%d:%d:%d";
+        break;
+    case DateFormat::DATETIME:
+        m_DateFormatGet = "%Y-%m-%d %H:%M:%S";
+        m_DateFormatGive = "%d-%d-%d %d:%d:%d";
+        break;
+    }
+}
+
+std::chrono::sys_seconds GenDateTime::getBegin()
+{
+    return m_begin;
+}
+
+std::chrono::sys_seconds GenDateTime::getEnd()
+{
+    return m_end;
+}
+
+GenDateTime::DateFormat GenDateTime::getFormat()
+{
+    return m_format;
+}
+
+const std::vector<std::string> &GenDateTime::genRows()
+{
+    m_errMesage.clear();
+    if(!isValidProperties()){
+        std::cout << "GenDateTime: genRows: Error: " << m_errMesage << std::endl;
+        return m_vecRows;
+    }
+    m_vecRows.clear();
+
+    // DGeneration rows
+
+    return m_vecRows;
+}
+
+std::string GenDateTime::dateToStr(const std::chrono::sys_seconds &dateTime)
+{
+    DateComponents dc = extractDateComponents(dateTime);
+    char str[100];
+    switch (m_format){
+    case DateFormat::DATE:
+        std::snprintf(str, sizeof(str), m_DateFormatGive.c_str(), dc.year, dc.month, dc.day);
+        break;
+    case DateFormat::TIME:
+        std::snprintf(str, sizeof(str), m_DateFormatGive.c_str(), dc.hour, dc.minute, dc.second);
+        break;
+    case DateFormat::DATETIME:
+        std::snprintf(str, sizeof(str), m_DateFormatGive.c_str(), dc.year, dc.month, dc.day, dc.hour, dc.minute, dc.second);
+        break;
+    }
+    return str;
+}
+
+std::chrono::sys_seconds GenDateTime::strToDate(const std::string &dateTime)
+{
+    std::tm tm = {};
+    std::istringstream ss(dateTime);
+    ss >> std::get_time(&tm, m_DateFormatGet.c_str());
+    if (ss.fail()) {
+        std::cout << "The entered date is incorrect: " << dateTime << std::endl;
+        return std::chrono::sys_seconds();
+    }
+    if(tm.tm_mday == 0){
+        tm.tm_mday++;
+    }
+    return std::chrono::sys_days(std::chrono::year(tm.tm_year + 1900)/
+    std::chrono::month(tm.tm_mon + 1)/std::chrono::day(tm.tm_mday)) + std::chrono::hours(tm.tm_hour) + 
+    std::chrono::minutes(tm.tm_min) + std::chrono::seconds(tm.tm_sec);
+}
+
+bool GenDateTime::isValidProperties()
+{
+    std::string errMsg = "\nIncorrect properties: ";
+    bool flg = true;
+    if(m_end < m_begin){
+        errMsg += "\n\tIncorrect range.";
+        flg = false;
+    }
+    if(!m_flgUnRegDupl){
+        flg = isValidDuplicate(errMsg);
+        auto range = m_end - m_begin;
+        size_t maxCountDupl = m_countDupl / 2;
+        if(m_format == GenDateTime::DateFormat::DATE){
+            if(range.count() / 86400  < m_countUniq + maxCountDupl){
+                errMsg += "\n\tThere are too few days between the dates.";
+                flg = false;
+            }
+        }else{
+            if(range.count()  < m_countUniq + maxCountDupl){
+                errMsg += "\n\tThere are too few seconds between the dates.";
+                flg = false;
+            }
+        }
+    }
+    if(!flg){
+        m_errMesage += errMsg;
+    }
+    return flg;
 }
