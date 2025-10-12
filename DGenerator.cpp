@@ -509,7 +509,7 @@ size_t GenWord::isUpperCase()
     return m_flgUpperCase;
 }
 
-void GenWord::genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
+void GenWord::genValue(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
         size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss)
 {
     int numShift = (m_flgUpperCase ? 65 : 97);
@@ -601,15 +601,15 @@ const std::vector<std::string>& GenWord::genRows()
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
-            genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
+            genValue(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
         }
     }else{
         if(m_duplicates == 1){
-            genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
+            genValue(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
             m_vecRows.resize(m_countRows, m_vecRows[0]);
         }else{
             while(setUnique.size() < m_countUniq){
-                genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
+                genValue(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
             }
             size_t stillDupl = m_countDupl;
             while(stillDupl > 0){
@@ -617,7 +617,7 @@ const std::vector<std::string>& GenWord::genRows()
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl--;
                 }else{
-                    genWord(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
+                    genValue(distrLetter, distrPercent, minLength, setUnique, miss, maxCountMiss);
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl -= 2;
                 }
@@ -638,12 +638,26 @@ const std::vector<std::string>& GenWord::genRows()
 
 //______________Date______________
 
-GenDateTime::GenDateTime()
+GenDateTime::GenDateTime() : Column() 
 {
-    setFormat(GenDateTime::DateFormat::DATETIME);
+    setFormat(DateFormat::DATETIME);
 }
 
-GenDateTime::GenDateTime(GenDateTime::DateFormat format)
+GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column(name, countRows, duplicates, flgShuffle, flgDebug), m_format(format)
+{
+    setFormat(format);
+    setRange(begin, end);
+}
+
+GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug) : 
+Column(name, countRows, flgShuffle, flgDebug), m_format(format)
+{
+    setFormat(format);
+    setRange(begin, end);
+}
+
+GenDateTime::GenDateTime(DateFormat format)
 {
     setFormat(format);
 }
@@ -689,6 +703,11 @@ GenDateTime::DateFormat GenDateTime::getFormat()
     return m_format;
 }
 
+const std::vector<std::string> &GenDateTime::getVecRows()
+{
+    return m_vecRows;
+}
+
 const std::vector<std::string> &GenDateTime::genRows()
 {
     m_errMesage.clear();
@@ -697,10 +716,57 @@ const std::vector<std::string> &GenDateTime::genRows()
         return m_vecRows;
     }
     m_vecRows.clear();
+    std::set<std::chrono::sys_seconds> setUnique;
+    std::uniform_int_distribution<size_t> distDays(0, std::chrono::duration_cast<std::chrono::days>(m_end - m_begin).count());
+    std::uniform_int_distribution<size_t> distSeconds(0, std::chrono::duration_cast<std::chrono::seconds>(m_end - m_begin).count());
+    std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
+    if(m_flgUnRegDupl){
+        for(size_t i = 0; i < m_countRows; i++){
+            genValue(distDays, distSeconds, setUnique);
+        }
+    }else{
+        if(m_duplicates == 1){
+            genValue(distDays, distSeconds, setUnique);
+            m_vecRows.resize(m_countRows, m_vecRows[0]);
+        }else{
+            while(setUnique.size() < m_countUniq){
+                genValue(distDays, distSeconds, setUnique);
+            }
+            size_t stillDupl = m_countDupl;
+            while(stillDupl > 0){
+                if((distrPercent(m_gen) > 0.7 || stillDupl == 1) && stillDupl != m_countDupl){
+                    m_vecRows.push_back(m_vecRows.back());
+                    stillDupl--;
+                }else{
+                    genValue(distDays, distSeconds, setUnique);
+                    m_vecRows.push_back(m_vecRows.back());
+                    stillDupl -= 2;
+                }
+            }
+        }
+    }
 
-    // DGeneration rows
-
+    if(m_flgShuffle){
+        shuffleRows();
+    }
     return m_vecRows;
+}
+
+void GenDateTime::genValue(std::uniform_int_distribution<size_t>& distDays, std::uniform_int_distribution<size_t>& distSeconds, std::set<std::chrono::sys_seconds>& set)
+{
+    std::chrono::sys_seconds date;
+    while (true){
+        if(m_format == DateFormat::DATE){
+            date = m_begin + std::chrono::days(distDays(m_gen));
+        }else{
+            date = m_begin + std::chrono::seconds(distSeconds(m_gen));
+        }
+        if(!set.contains(date)){
+            set.insert(date);
+            break;
+        }
+    }
+    m_vecRows.push_back(dateToStr(date));
 }
 
 std::string GenDateTime::dateToStr(const std::chrono::sys_seconds &dateTime)
@@ -748,14 +814,15 @@ bool GenDateTime::isValidProperties()
     }
     if(!m_flgUnRegDupl){
         flg = isValidDuplicate(errMsg);
-        auto range = m_end - m_begin;
         size_t maxCountDupl = m_countDupl / 2;
-        if(m_format == GenDateTime::DateFormat::DATE){
-            if(range.count() / 86400  < m_countUniq + maxCountDupl){
+        if(m_format == DateFormat::DATE){
+            std::chrono::days range = std::chrono::duration_cast<std::chrono::days>(m_end - m_begin);
+            if(range.count() < m_countUniq + maxCountDupl){
                 errMsg += "\n\tThere are too few days between the dates.";
                 flg = false;
             }
         }else{
+            std::chrono::seconds range = std::chrono::duration_cast<std::chrono::seconds>(m_end - m_begin);
             if(range.count()  < m_countUniq + maxCountDupl){
                 errMsg += "\n\tThere are too few seconds between the dates.";
                 flg = false;

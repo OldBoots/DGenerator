@@ -119,7 +119,7 @@ public:
     size_t isUpperCase();
     const std::vector<std::string>& genRows();
 private:
-    void genWord(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
+    void genValue(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
         size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss);
     void showDebug();
     bool isValidProperties();
@@ -130,19 +130,26 @@ private:
     bool m_flgUpperCase;
 };
 
+//Column(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+//Column(std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
+
 class GenDateTime : public Column
 {
 public:
     enum class DateFormat{DATE, TIME, DATETIME};
     GenDateTime();
-    GenDateTime(GenDateTime::DateFormat format);
+    GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug);
+    GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug);
+    GenDateTime(DateFormat format);
     void setRange(std::string begin, std::string end);
     void setFormat(DateFormat format);
     std::chrono::sys_seconds getBegin();
     std::chrono::sys_seconds getEnd();
     GenDateTime::DateFormat getFormat();
+    const std::vector<std::string>& getVecRows();
     const std::vector<std::string>& genRows();
 private:
+    void genValue(std::uniform_int_distribution<size_t>& distDays, std::uniform_int_distribution<size_t>& distSeconds, std::set<std::chrono::sys_seconds>& set);
     std::string dateToStr(const std::chrono::sys_seconds& dateTime);
     std::chrono::sys_seconds strToDate(const std::string& dateTime);
     bool isValidProperties();
