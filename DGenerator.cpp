@@ -550,7 +550,7 @@ void GenWord::showDebug()
     std::cout << std::endl << std::endl;
     std::cout << "Column type\t\t- WORD" << std::endl;
     showGeneralInfo();
-    std::cout << "GenWord length range\t- " << m_minLength << " - " << m_maxLength << std::endl;
+    std::cout << "Word length range\t- " << m_minLength << " - " << m_maxLength << std::endl;
     std::cout << "Proportion of CL\t- " << m_capitalLetter << std::endl;
     std::cout << "Is upper case enable\t- " << (m_flgUpperCase ? "YES" : "NO") << std::endl;
 }
@@ -720,6 +720,12 @@ const std::vector<std::string> &GenDateTime::genRows()
     std::uniform_int_distribution<size_t> distDays(0, std::chrono::duration_cast<std::chrono::days>(m_end - m_begin).count());
     std::uniform_int_distribution<size_t> distSeconds(0, std::chrono::duration_cast<std::chrono::seconds>(m_end - m_begin).count());
     std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
+    if(m_flgDebug){
+        showDebug();
+        std::cout << "Properties validation\t- OK" << std::endl;
+        std::cout << "Generation\t\t- START" << std::endl;
+    }
+    auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
             genValue(distDays, distSeconds, setUnique);
@@ -745,9 +751,14 @@ const std::vector<std::string> &GenDateTime::genRows()
             }
         }
     }
-
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
     if(m_flgShuffle){
         shuffleRows();
+    }
+    if(m_flgDebug){
+        std::cout << "Generation\t\t- FINISHED" << std::endl;
+        std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
     }
     return m_vecRows;
 }
@@ -833,4 +844,16 @@ bool GenDateTime::isValidProperties()
         m_errMesage += errMsg;
     }
     return flg;
+}
+
+void GenDateTime::showDebug()
+{
+    std::cout << std::endl << std::endl;
+    std::cout << "Column type\t\t- DATETIME" << std::endl;
+    showGeneralInfo();
+    std::cout << "Date format\t\t- " << (m_format == DateFormat::DATE ? "DATE" 
+        : m_format == DateFormat::TIME ? "TIME" 
+        : m_format == DateFormat::DATETIME ? "DATETIME" 
+        : "Unknown") << std::endl;
+    std::cout << "Date range\t\t- " << dateToStr(m_begin) << " - " << dateToStr(m_end) << std::endl;
 }

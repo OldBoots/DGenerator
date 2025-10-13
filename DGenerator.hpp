@@ -153,6 +153,7 @@ private:
     std::string dateToStr(const std::chrono::sys_seconds& dateTime);
     std::chrono::sys_seconds strToDate(const std::string& dateTime);
     bool isValidProperties();
+    void showDebug();
 private:
     DateFormat m_format;
     std::string m_DateFormatGet;
