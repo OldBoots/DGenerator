@@ -26,8 +26,8 @@ class Column
 {
 public:
     Column();
-    Column(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
-    Column(std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
+    Column(std::string type, std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+    Column(std::string type, std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
     void setName(std::string name);
     void setCountRows(size_t count);
     void setDuplicate(double val);
@@ -35,17 +35,21 @@ public:
     void setFlgUnRegDupl(bool flg);
     void setFlgDebug(bool flg);
     std::string getName();
+    std::string getTypeName();
     size_t getCountRows();
     double getDuplicate();
     bool isShuffleEnabled();
     bool isDuplRegDisabled();
-    const std::vector<std::string>& getVecRows() const;
+    const std::vector<std::string>& getRows() const;
     std::string getRow(size_t index) const;
     size_t getCountDupl();
     size_t getCountUniq();
     void shuffleRows();
     void clearVecRows();
+    virtual const std::vector<std::string>& genRows();
+    virtual ~Column() = default;
 protected:
+    void removeRow(size_t index);
     bool isValidDuplicate(std::string& errMsg);
     void showGeneralInfo();
 protected:
@@ -61,6 +65,8 @@ protected:
     std::string m_errMesage;
     std::random_device m_rd;
     std::mt19937 m_gen;
+    std::string m_type;
+    friend class GenString;
 private:
     void calcUniqAndDupl();
 };
@@ -71,7 +77,7 @@ public:
     GenInt();
     GenInt(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     GenInt(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug);
-    const std::vector<std::string>& genRows();
+    const std::vector<std::string>& genRows() override;
     void setRange(int min, int max);
     int getMin();
     int getMax();
@@ -90,7 +96,7 @@ public:
     GenFloat();
     GenFloat(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     GenFloat(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug);
-    const std::vector<std::string>& genRows();
+    const std::vector<std::string>& genRows() override;
     void setRange(double min, double max);
     double getMin();
     double getMax();
@@ -117,7 +123,7 @@ public:
     size_t getMaxLength();
     double getCapitalLetter();
     size_t isUpperCase();
-    const std::vector<std::string>& genRows();
+    const std::vector<std::string>& genRows() override;
 private:
     void genValue(std::uniform_int_distribution<>& distrLetter, std::uniform_real_distribution<>& distrPrecent, 
         size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss);
@@ -140,14 +146,12 @@ public:
     GenDateTime();
     GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug);
     GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug);
-    GenDateTime(DateFormat format);
     void setRange(std::string begin, std::string end);
     void setFormat(DateFormat format);
     std::chrono::sys_seconds getBegin();
     std::chrono::sys_seconds getEnd();
     GenDateTime::DateFormat getFormat();
-    const std::vector<std::string>& getVecRows();
-    const std::vector<std::string>& genRows();
+    const std::vector<std::string>& genRows() override;
 private:
     void genValue(std::uniform_int_distribution<size_t>& distDays, std::uniform_int_distribution<size_t>& distSeconds, std::set<std::chrono::sys_seconds>& set);
     std::string dateToStr(const std::chrono::sys_seconds& dateTime);
@@ -160,7 +164,48 @@ private:
     std::string m_DateFormatGive;
     std::chrono::sys_seconds m_begin;
     std::chrono::sys_seconds m_end;
-    std::vector<std::string> m_vecRows;
+};
+
+class GenString : public Column
+{
+public:
+    GenString();
+    void addColumn(Column* column, std::string prefix = "",  std::string suffix = "");
+    // void editColumn();
+    // void removeColumn();
+    void showConfig();
+    const std::vector<std::string>& genRows() override;
+private:
+    /*
+    Логика:
+    Нужно 10 записей, 3 дубля
+        Кол1    Кол2    Кол3
+        1       1       1   d
+        2       2       2   u
+        3       3       3   u
+        4       4       4
+        5       5       5   u
+        6       6       6   u
+        7       7       7   u
+        8       7       8   
+        9               8   u
+        10              9   u
+        11              9   u
+        12              9   u
+        13                  u
+        Среди дочерних колонок должна быть хотябы одна, у которой Column.countRows >= String.countUniq + String.countDupl / 2.
+        Тогда в случайном порядке берем строки для дублей и размножаем их на String.countDupl (строки удаляются из ориг. последовательностей).
+        После в случайном порядке набирем уже уникальные строки (строки удаляются из ориг. последовательностей).
+        Если в колонке нет записи под этим индексом, вернуть пустую строку.
+
+        Сепоратор - пробел " ", тире "-" или нижнее подчеркивание "_".  
+    */
+std::string glueString(size_t& stillRows);
+private:
+    std::vector<Column*> m_vecColumns;
+    std::vector<std::string> m_vecSuffix;
+    std::vector<std::string> m_vecPrefix;
+    size_t m_maxCountRows;
 };
 
 #endif

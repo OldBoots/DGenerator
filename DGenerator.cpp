@@ -2,38 +2,47 @@
 
 namespace
 {
-DateComponents extractDateComponents(const std::chrono::sys_seconds &dateTime)
-{
-    std::chrono::year_month_day ymd = floor<std::chrono::days>(dateTime);
-    std::chrono::hh_mm_ss hms(dateTime - std::chrono::sys_days(ymd));
-    return {
-        static_cast<int>(ymd.year()),
-        static_cast<unsigned>(ymd.month()),
-        static_cast<unsigned>(ymd.day()),
-        static_cast<int>(hms.hours().count()),
-        static_cast<int>(hms.minutes().count()),
-        static_cast<int>(hms.seconds().count())
-    };
-}
+    DateComponents extractDateComponents(const std::chrono::sys_seconds &dateTime)
+    {
+        std::chrono::year_month_day ymd = floor<std::chrono::days>(dateTime);
+        std::chrono::hh_mm_ss hms(dateTime - std::chrono::sys_days(ymd));
+        return {
+            static_cast<int>(ymd.year()),
+            static_cast<unsigned>(ymd.month()),
+            static_cast<unsigned>(ymd.day()),
+            static_cast<int>(hms.hours().count()),
+            static_cast<int>(hms.minutes().count()),
+            static_cast<int>(hms.seconds().count())
+        };
+    }
+    template <typename T>
+    void showVec(const std::vector<T>& vec, bool inLine = true)
+    {
+        std::cout << "size = " << vec.size() << " -- ";
+        for(const auto& val : vec){
+            std::cout << (inLine ? " " : "\n") << val;
+        }
+        std::cout << std::endl;
+    }
 }
 
 //______________Column______________
 
 Column::Column() : m_name(""), m_flgUnRegDupl(false), m_flgShuffle(false), m_duplicates(0), m_countDupl(0), 
-m_countRows(0), m_rd(), m_gen(m_rd())
+m_countRows(0), m_rd(), m_gen(m_rd()), m_type("COLUMN")
 {
 }
 
-Column::Column(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column::Column(std::string type, std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
 m_name(name), m_flgUnRegDupl(false), m_flgShuffle(flgShuffle), m_flgDebug(flgDebug), m_duplicates(duplicates), 
-m_countRows(countRows), m_rd(), m_gen(m_rd())
+m_countRows(countRows), m_rd(), m_gen(m_rd()), m_type(type)
 {
     calcUniqAndDupl();
 }
 
-Column::Column(std::string name, size_t countRows, bool flgShuffle, bool flgDebug) : m_name(name), 
+Column::Column(std::string type, std::string name, size_t countRows, bool flgShuffle, bool flgDebug) : m_name(name), 
 m_flgUnRegDupl(true), m_flgShuffle(flgShuffle), m_flgDebug(flgDebug), m_duplicates(0), m_countRows(countRows), m_rd(), 
-m_gen(m_rd())
+m_gen(m_rd()), m_type(type)
 {
     calcUniqAndDupl();
 }
@@ -77,16 +86,20 @@ void Column::setFlgDebug(bool flg)
 
 std::string Column::getRow(size_t index) const
 {
-    if(index >= m_vecRows.size()){
-        return "";
+    if(index < m_vecRows.size() && index >= 0){
+        return m_vecRows[index];
     }
-    return m_vecRows[index];
-    
+    return "";
 }
 
 std::string Column::getName()
 {
     return m_name;
+}
+
+std::string Column::getTypeName()
+{
+    return m_type;
 }
 
 size_t Column::getCountRows()
@@ -104,7 +117,7 @@ bool Column::isDuplRegDisabled()
     return m_flgUnRegDupl;
 }
 
-const std::vector<std::string> &Column::getVecRows() const
+const std::vector<std::string> &Column::getRows() const
 {
     return m_vecRows;
 }
@@ -124,7 +137,15 @@ size_t Column::getCountUniq()
     return m_countUniq;
 }
 
-bool Column::isValidDuplicate(std::string& errMsg)
+void Column::removeRow(size_t index)
+{
+    if(index < m_vecRows.size() && index >= 0){
+        std::swap(m_vecRows[index], m_vecRows.back());
+        m_vecRows.pop_back();
+    }
+}
+
+bool Column::isValidDuplicate(std::string &errMsg)
 {
     bool flg = true;
     if(m_duplicates == 1 || m_duplicates == 0){
@@ -144,6 +165,12 @@ bool Column::isValidDuplicate(std::string& errMsg)
 void Column::clearVecRows()
 {
     m_vecRows.clear();
+}
+
+const std::vector<std::string> &Column::genRows()
+{
+    std::cout << "The \"genRows()\" method of the \"Column\" base class was called!" << std::endl;
+    return m_vecRows;
 }
 
 void Column::showGeneralInfo()
@@ -180,12 +207,12 @@ GenInt::GenInt() : Column(), m_min(0), m_max(0)
 }
 
 GenInt::GenInt(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
+Column("INT", name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
 GenInt::GenInt(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
-Column(name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
+Column("INT", name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
@@ -331,12 +358,12 @@ GenFloat::GenFloat() : Column(), m_min(0), m_max(0)
 }
 
 GenFloat::GenFloat(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column(name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
+Column("FLOAT", name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
 GenFloat::GenFloat(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug) : 
-Column(name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
+Column("FLOAT", name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
@@ -456,14 +483,14 @@ GenWord::GenWord() : Column(), m_minLength(0), m_maxLength(0), m_capitalLetter(0
 
 GenWord::GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, 
     double capitalLetter, bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
-    Column(name, countRows, duplicates, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
+    Column("WORD", name, countRows, duplicates, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {    
 }
 
 GenWord::GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, 
     bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
-    Column(name, countRows, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
+    Column("WORD", name, countRows, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {
 }
@@ -644,22 +671,17 @@ GenDateTime::GenDateTime() : Column()
 }
 
 GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column(name, countRows, duplicates, flgShuffle, flgDebug), m_format(format)
+Column("DATETIME", name, countRows, duplicates, flgShuffle, flgDebug), m_format(format)
 {
     setFormat(format);
     setRange(begin, end);
 }
 
 GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug) : 
-Column(name, countRows, flgShuffle, flgDebug), m_format(format)
+Column("DATETIME", name, countRows, flgShuffle, flgDebug), m_format(format)
 {
     setFormat(format);
     setRange(begin, end);
-}
-
-GenDateTime::GenDateTime(DateFormat format)
-{
-    setFormat(format);
 }
 
 void GenDateTime::setRange(std::string begin, std::string end)
@@ -701,11 +723,6 @@ std::chrono::sys_seconds GenDateTime::getEnd()
 GenDateTime::DateFormat GenDateTime::getFormat()
 {
     return m_format;
-}
-
-const std::vector<std::string> &GenDateTime::getVecRows()
-{
-    return m_vecRows;
 }
 
 const std::vector<std::string> &GenDateTime::genRows()
@@ -856,4 +873,96 @@ void GenDateTime::showDebug()
         : m_format == DateFormat::DATETIME ? "DATETIME" 
         : "Unknown") << std::endl;
     std::cout << "Date range\t\t- " << dateToStr(m_begin) << " - " << dateToStr(m_end) << std::endl;
+}
+
+//______________String______________
+
+GenString::GenString() : m_maxCountRows(0)
+{}
+
+void GenString::addColumn(Column* column, std::string prefix,  std::string suffix)
+{
+    size_t countRows = column->getCountRows();
+    if(countRows > m_maxCountRows){
+        m_maxCountRows = column->getCountRows();
+    }
+    m_vecColumns.push_back(column);
+    m_vecPrefix.push_back(prefix);
+    m_vecSuffix.push_back(suffix);
+}
+
+void GenString::showConfig()
+{
+    std::cout << "Name:\t\t";
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        std::cout << "/ \"" << m_vecColumns[i]->getName() << "\" /\t";
+    }
+    std::cout << std::endl;
+    std::cout << "Type:\t\t";
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        std::cout << m_vecColumns[i]->getTypeName() << "\t\t";
+    }
+    std::cout << std::endl;
+    std::cout << "Count rows:\t";
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        std::cout << m_vecColumns[i]->getCountRows() << "\t\t";
+    }
+    std::cout << std::endl << std::endl;
+    std::cout << "String:\t";
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->getTypeName() << ">"  << m_vecSuffix[i];
+    }
+    std::cout << std::endl;
+}
+
+const std::vector<std::string> &GenString::genRows()
+{
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        m_vecColumns[i]->genRows();
+    }
+    size_t stillRows = m_maxCountRows;
+    std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
+    if(m_flgUnRegDupl){
+        for(size_t i = 0; i < m_countRows; i++){
+            glueString(stillRows);
+        }
+    }else{
+        if(m_duplicates == 1){
+            glueString(stillRows);
+            m_vecRows.resize(m_countRows, m_vecRows[0]);
+        }else{
+            while(m_vecRows.size() < m_countUniq){
+                glueString(stillRows);
+            }
+            size_t stillDupl = m_countDupl;
+            while(stillDupl > 0){
+                if((distrPercent(m_gen) > 0.7 || stillDupl == 1) && stillDupl != m_countDupl){
+                    m_vecRows.push_back(m_vecRows.back());
+                    stillDupl--;
+                }else{
+                    glueString(stillRows);
+                    m_vecRows.push_back(m_vecRows.back());
+                    stillDupl -= 2;
+                }
+            }
+        }
+    }
+    return m_vecRows;
+}
+
+std::string GenString::glueString(size_t& stillRows)
+{
+    std::string str;
+    std::uniform_int_distribution<size_t> distRow(0, stillRows);
+    stillRows--;
+    size_t index = distRow(m_gen);
+    for(size_t i = 0; i < m_vecColumns.size(); i++){
+        std::string temp = m_vecColumns[i]->getRow(index);
+        if(!temp.empty()){
+            str += m_vecPrefix[i] + temp + m_vecSuffix[i];
+            m_vecColumns[i]->removeRow(index);
+        }
+    }
+    m_vecRows.push_back(str);
+    return str;
 }
