@@ -81,8 +81,11 @@ public:
     GenInt();
     GenInt(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     GenInt(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug);
+    GenInt(std::string name, int start, int step, size_t countRows, bool flgDebug);
     const std::vector<std::string>& genRows() override;
     void setRange(int min, int max);
+    void setflgSequence(bool flg);
+    bool isSequence();
     int getMin();
     int getMax();
 private:
@@ -92,6 +95,8 @@ private:
 private:
     int m_min;
     int m_max;
+    bool m_flgSequence;
+    int m_step;
 };
 
 class GenFloat : public Column
@@ -100,8 +105,11 @@ public:
     GenFloat();
     GenFloat(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     GenFloat(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug);
+    GenFloat(std::string name, double start, double step, size_t countRows, bool flgDebug);
     const std::vector<std::string>& genRows() override;
     void setRange(double min, double max);
+    void setFlgSequence(bool flg);
+    bool isSequence();
     double getMin();
     double getMax();
 private:
@@ -111,6 +119,8 @@ private:
 private:
     double m_min;
     double m_max;
+    bool m_flgSequence;
+    double m_step;
 };
 
 class GenWord : public Column
@@ -140,9 +150,6 @@ private:
     bool m_flgUpperCase;
 };
 
-//Column(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
-//Column(std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
-
 class GenDateTime : public Column
 {
 public:
@@ -170,54 +177,29 @@ private:
     std::chrono::sys_seconds m_end;
 };
 
-// Column(std::string type, std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
-// Column(std::string type, std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
-
 class GenString : public Column
 {
 public:
     GenString();
     GenString(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     GenString(std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
+    GenString(std::string name, size_t countRows, bool flgDebug);
     void addColumn(Column* column, std::string prefix = "",  std::string suffix = "");
-    // void editColumn();
-    // void removeColumn();
+    void setFlgSequence(bool flg);
+    bool isSequence();
     void showConfig();
     const std::vector<std::string>& genRows() override;
 private:
-    /*
-    Логика:
-    Нужно 10 записей, 3 дубля
-        Кол1    Кол2    Кол3
-        1       1       1   d
-        2       2       2   u
-        3       3       3   u
-        4       4       4
-        5       5       5   u
-        6       6       6   u
-        7       7       7   u
-        8       7       8   
-        9               8   u
-        10              9   u
-        11              9   u
-        12              9   u
-        13                  u
-        Среди дочерних колонок должна быть хотябы одна, у которой Column.countRows >= String.countUniq + String.countDupl / 2.
-        Тогда в случайном порядке берем строки для дублей и размножаем их на String.countDupl (строки удаляются из ориг. последовательностей).
-        После в случайном порядке набирем уже уникальные строки (строки удаляются из ориг. последовательностей).
-        Если в колонке нет записи под этим индексом, вернуть пустую строку.
-
-        Сепоратор - пробел " ", тире "-" или нижнее подчеркивание "_".  
-    */
-    std::string glueString(size_t& stillRows);
     void equalizeVec();
-    bool isValidProperties();
     void showDebug();
+    std::string glueString(size_t& stillRows);
+    bool isValidProperties();
 private:
     std::vector<Column*> m_vecColumns;
     std::vector<std::string> m_vecSuffix;
     std::vector<std::string> m_vecPrefix;
     size_t m_maxCountRows;
+    bool m_flgSequence;
 };
 
 #endif

@@ -228,10 +228,25 @@ Column("INT", name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
+GenInt::GenInt(std::string name, int start, int step, size_t countRows, bool flgDebug) : 
+Column("INT", name, countRows, false, flgDebug), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
+{
+}
+
 void GenInt::setRange(int min, int max)
 {
     m_min = min;
     m_max = max;
+}
+
+void GenInt::setflgSequence(bool flg)
+{
+    m_flgSequence = flg;
+}
+
+bool GenInt::isSequence()
+{
+    return m_flgSequence;
 }
 
 int GenInt::getMin()
@@ -249,10 +264,10 @@ bool GenInt::isValidProperties()
     std::string errMsg = "\nIncorrect properties: ";
     bool flg = true;
     if(m_max < m_min){
-            errMsg += "\n\tIncorrect range.";
-            flg = false;
-        }
-    if(!m_flgUnRegDupl){
+        errMsg += "\n\tIncorrect range.";
+        flg = false;
+    }
+    if(!m_flgUnRegDupl && !m_flgSequence){
         flg = isValidDuplicate(errMsg);
         size_t maxCountDupl = m_countDupl / 2;
         int range = m_max - m_min;
@@ -302,6 +317,7 @@ void GenInt::showDebug()
 {
     showGeneralInfo();
     outputDebugLine("Range values", 24, std::to_string(m_min) + " - " + std::to_string(m_max));
+    outputDebugLine("Is Sequence", 24, m_flgSequence, "YES", "NO");
 }
 
 const std::vector<std::string>& GenInt::genRows()
@@ -323,8 +339,14 @@ const std::vector<std::string>& GenInt::genRows()
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
-        for(size_t i = 0; i < m_countRows; i++){
-            m_vecRows.push_back(std::to_string(distrValue(m_gen)));
+        if(m_flgSequence){
+            for(size_t i = 0; i < m_countRows; i++){
+                m_vecRows.push_back(std::to_string(m_min + i * m_step));
+            }
+        }else{
+            for(size_t i = 0; i < m_countRows; i++){
+                m_vecRows.push_back(std::to_string(distrValue(m_gen)));
+            }
         }
     }else{
         if(m_duplicates == 1){
@@ -376,6 +398,11 @@ Column("FLOAT", name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
 {
 }
 
+GenFloat::GenFloat(std::string name, double start, double step, size_t countRows, bool flgDebug) :
+Column("FLOAT", name, countRows, false, flgDebug), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
+{
+}
+
 const std::vector<std::string> &GenFloat::genRows()
 {
     m_errMesage.clear();
@@ -392,8 +419,14 @@ const std::vector<std::string> &GenFloat::genRows()
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
-        for(size_t i = 0; i < m_countRows; i++){
-            m_vecRows.push_back(std::to_string(distrValue(m_gen)));
+        if(m_flgSequence){
+            for(size_t i = 0; i < m_countRows; i++){
+                m_vecRows.push_back(std::to_string(m_min + i * m_step));
+            }
+        }else{
+            for(size_t i = 0; i < m_countRows; i++){
+                m_vecRows.push_back(std::to_string(distrValue(m_gen)));
+            }
         }
     }else{
         if(m_duplicates == 1){
@@ -434,6 +467,16 @@ void GenFloat::setRange(double min, double max)
     m_max = max;
 }
 
+void GenFloat::setFlgSequence(bool flg)
+{
+    m_flgSequence = flg;
+}
+
+bool GenFloat::isSequence()
+{
+    return m_flgSequence;
+}
+
 double GenFloat::getMin()
 {
     return m_min;
@@ -452,7 +495,7 @@ bool GenFloat::isValidProperties()
         errMsg += "\n\tIncorrect range.";
         flg = false;
     }
-    if(!m_flgUnRegDupl){
+    if(!m_flgUnRegDupl && !m_flgSequence){
         flg = isValidDuplicate(errMsg);
     }
     if(!flg){
@@ -479,6 +522,7 @@ void GenFloat::showDebug()
 {
     showGeneralInfo();
     outputDebugLine("Range values", 24, std::to_string(m_min) + " - " + std::to_string(m_max));
+    outputDebugLine("Is sequence", 24, m_flgSequence, "YES", "NO");
 }
 
 //______________Word______________
@@ -890,6 +934,11 @@ Column("STRING", name, countRows, flgShuffle, flgDebug)
 {
 }
 
+GenString::GenString(std::string name, size_t countRows, bool flgDebug) : 
+Column("STRING", name, countRows, false, flgDebug), m_flgSequence(true)
+{
+}
+
 void GenString::addColumn(Column* column, std::string prefix,  std::string suffix)
 {
     size_t countRows = column->getCountRows();
@@ -899,6 +948,16 @@ void GenString::addColumn(Column* column, std::string prefix,  std::string suffi
     m_vecColumns.push_back(column);
     m_vecPrefix.push_back(prefix);
     m_vecSuffix.push_back(suffix);
+}
+
+void GenString::setFlgSequence(bool flg)
+{
+    m_flgSequence = flg;
+}
+
+bool GenString::isSequence()
+{
+    return m_flgSequence;
 }
 
 void GenString::showConfig()
@@ -931,8 +990,6 @@ const std::vector<std::string> &GenString::genRows()
     if(m_flgDebug){
         showDebug();
     }
-    size_t stillRows = m_maxCountRows;
-    std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
     for(int i = 0; i < m_vecColumns.size(); i++){
         if(m_flgDebug && !m_vecColumns[i]->m_flgDebug){
             outputDebugLine("Generation " + m_vecColumns[i]->m_type, 24, "START");
@@ -947,21 +1004,28 @@ const std::vector<std::string> &GenString::genRows()
         }
     }
     equalizeVec();
+    size_t count; 
+    if(m_flgSequence){
+        count = 0;
+    }else{
+        count = m_maxCountRows - 1;
+    }
+    std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
     if(m_flgDebug){
         outputDebugLine("Gluing rows", 24, "START");
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
-            glueString(stillRows);
+            glueString(count);
         }
     }else{
         if(m_duplicates == 1){
-            glueString(stillRows);
+            glueString(count);
             m_vecRows.resize(m_countRows, m_vecRows[0]);
         }else{
             while(m_vecRows.size() < m_countUniq){
-                glueString(stillRows);
+                glueString(count);
             }
             size_t stillDupl = m_countDupl;
             while(stillDupl > 0){
@@ -969,7 +1033,7 @@ const std::vector<std::string> &GenString::genRows()
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl--;
                 }else{
-                    glueString(stillRows);
+                    glueString(count);
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl -= 2;
                 }
@@ -988,18 +1052,20 @@ const std::vector<std::string> &GenString::genRows()
     return m_vecRows;
 }
 
-std::string GenString::glueString(size_t& stillRows)
+std::string GenString::glueString(size_t& count)
 {
     std::string str;
-    std::uniform_int_distribution<size_t> distRow(0, stillRows - 1);
-    stillRows--;
-    size_t index = distRow(m_gen);
+    size_t index;
+    if(m_flgSequence){
+        index = count;
+        count++;
+    }else{
+        std::uniform_int_distribution<size_t> distRow(0, count);
+        index = distRow(m_gen);
+        count--;
+    }
     for(size_t i = 0; i < m_vecColumns.size(); i++){
-        std::string temp = m_vecColumns[i]->getRow(index);
-        if(!temp.empty()){
-            str += m_vecPrefix[i] + temp + m_vecSuffix[i];
-            m_vecColumns[i]->removeRow(index);
-        }
+        str += m_vecPrefix[i] + m_vecColumns[i]->getRow(index) + m_vecSuffix[i];
     }
     m_vecRows.push_back(str);
     return str;
