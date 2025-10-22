@@ -175,17 +175,29 @@ const std::vector<std::string> &Column::genRows()
 
 void Column::showGeneralInfo()
 {
-    if(m_flgDebug){
-        std::cout << "Column name\t\t- \"" << m_name << "\"" << std::endl;
-        std::cout << "Duplicates registration\t- " << (m_flgUnRegDupl ? "NO" : "YES") << std::endl;
-        if(!m_flgUnRegDupl){
-            std::cout << "Duplicates\t\t- " << m_duplicates << std::endl;
-            std::cout << "Count duplicates\t- " << m_countDupl << std::endl;
-            std::cout << "Count unique\t\t- " << m_countUniq << std::endl;
-        }
-        std::cout << "Count rows\t\t- " << m_countRows << std::endl;
-        std::cout << "Shuffle rows\t\t- " << (m_flgShuffle ? "YES" : "NO") << std::endl;
+    std::cout << std::endl;
+    outputDebugLine("Column name", 24, m_name);
+    outputDebugLine("Column type", 24, m_type);
+    outputDebugLine("Duplicates registration", 24, m_flgUnRegDupl, "NO", "YES");
+    if(!m_flgUnRegDupl){
+        outputDebugLine("Duplicates", 24, m_duplicates);
+        outputDebugLine("Count duplicates", 24, m_countDupl);
+        outputDebugLine("Count unique", 24, m_countUniq);
     }
+    outputDebugLine("Count rows", 24, m_countRows);
+    outputDebugLine("Shuffle rows", 24, m_flgShuffle, "YES", "NO");
+}
+
+template <typename T>
+void Column::outputDebugLine(const std::string& lable, unsigned int gap, const T& value)
+{
+    std::cout << lable << "\r" << "\033[" + std::to_string(gap) + "C- " << value << std::endl;
+}
+
+template <typename T1, typename T2>
+void Column::outputDebugLine(const std::string& lable, unsigned int gap, bool condition, const T1& tr, const T2& fls)
+{
+    std::cout << lable << "\r" << "\033[" + std::to_string(gap) + "C- " << (condition ? tr : fls) << std::endl;
 }
 
 void Column::calcUniqAndDupl()
@@ -288,10 +300,8 @@ void GenInt::genValue(std::uniform_int_distribution<>& distr, std::set<int>& set
 
 void GenInt::showDebug()
 {
-    std::cout << std::endl << std::endl;
-    std::cout << "Column type\t\t- INT" << std::endl;
     showGeneralInfo();
-    std::cout << "Range values\t\t- " << m_min << " - " << m_max << std::endl;
+    outputDebugLine("Range values", 24, std::to_string(m_min) + " - " + std::to_string(m_max));
 }
 
 const std::vector<std::string>& GenInt::genRows()
@@ -309,8 +319,7 @@ const std::vector<std::string>& GenInt::genRows()
     size_t enumVal = m_min;
     if(m_flgDebug){
         showDebug();
-        std::cout << "Properties validation\t- OK" << std::endl;
-        std::cout << "Generation\t\t- START" << std::endl;
+        outputDebugLine("Generation", 24, "START");
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
@@ -344,9 +353,9 @@ const std::vector<std::string>& GenInt::genRows()
         shuffleRows();
     }
     if(m_flgDebug){
-        std::cout << "Generation\t\t- FINISHED" << std::endl;
-        std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
-        std::cout << "Using an enumeration\t- " << (miss >= maxCountMiss ? "YES" : "NO") << std::endl;
+        outputDebugLine("Generation", 24, "FINISHED");
+        outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
+        outputDebugLine("Using an enumeration", 24, miss >= maxCountMiss, "YES", "NO");
     }
     return m_vecRows;
 }
@@ -379,8 +388,7 @@ const std::vector<std::string> &GenFloat::genRows()
     std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
     if(m_flgDebug){
         showDebug();
-        std::cout << "Properties validation\t- OK" << std::endl;
-        std::cout << "Generation\t\t- START" << std::endl;
+        outputDebugLine("Generation", 24, "START");
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
@@ -414,8 +422,8 @@ const std::vector<std::string> &GenFloat::genRows()
         shuffleRows();
     }
     if(m_flgDebug){
-        std::cout << "Generation\t\t- FINISHED" << std::endl;
-        std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
+        outputDebugLine("Generation", 24, "FINISHED");
+        outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
     }
     return m_vecRows;
 }
@@ -469,10 +477,8 @@ void GenFloat::genValue(std::uniform_real_distribution<double>& distr, std::set<
 
 void GenFloat::showDebug()
 {
-    std::cout << std::endl << std::endl;
-    std::cout << "Column type\t\t- FLOAT" << std::endl;
     showGeneralInfo();
-    std::cout << "Range values\t\t- " << m_min << " - " << m_max << std::endl;
+    outputDebugLine("Range values", 24, std::to_string(m_min) + " - " + std::to_string(m_max));
 }
 
 //______________Word______________
@@ -574,12 +580,10 @@ void GenWord::genValue(std::uniform_int_distribution<>& distrLetter, std::unifor
 
 void GenWord::showDebug()
 {
-    std::cout << std::endl << std::endl;
-    std::cout << "Column type\t\t- WORD" << std::endl;
     showGeneralInfo();
-    std::cout << "Word length range\t- " << m_minLength << " - " << m_maxLength << std::endl;
-    std::cout << "Proportion of CL\t- " << m_capitalLetter << std::endl;
-    std::cout << "Is upper case enable\t- " << (m_flgUpperCase ? "YES" : "NO") << std::endl;
+    outputDebugLine("Word length range", 24, std::to_string(m_minLength) + " - " + std::to_string(m_maxLength));
+    outputDebugLine("Proportion of CL", 24, m_capitalLetter);
+    outputDebugLine("Is upper case enable", 24, m_flgUpperCase, "YES", "NO");
 }
 
 bool GenWord::isValidProperties()
@@ -622,8 +626,7 @@ const std::vector<std::string>& GenWord::genRows()
     size_t minLength = m_minLength;
     if(m_flgDebug){
         showDebug();
-        std::cout << "Properties validation\t- OK" << std::endl;
-        std::cout << "Generation\t\t- START" << std::endl;
+        outputDebugLine("Generation", 24, "START");
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
@@ -657,8 +660,8 @@ const std::vector<std::string>& GenWord::genRows()
         shuffleRows();
     }
     if(m_flgDebug){
-        std::cout << "Generation\t\t- FINISHED" << std::endl;
-        std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
+        outputDebugLine("Generation", 24, "FINISHED");
+        outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
     }
     return m_vecRows;
 }
@@ -739,8 +742,7 @@ const std::vector<std::string> &GenDateTime::genRows()
     std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
     if(m_flgDebug){
         showDebug();
-        std::cout << "Properties validation\t- OK" << std::endl;
-        std::cout << "Generation\t\t- START" << std::endl;
+        outputDebugLine("Generation", 24, "START");
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
@@ -774,8 +776,8 @@ const std::vector<std::string> &GenDateTime::genRows()
         shuffleRows();
     }
     if(m_flgDebug){
-        std::cout << "Generation\t\t- FINISHED" << std::endl;
-        std::cout << "Time\t\t\t- " << time.count() << " ms" << std::endl;
+        outputDebugLine("Generation", 24, "FINISHED");
+        outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
     }
     return m_vecRows;
 }
@@ -865,20 +867,28 @@ bool GenDateTime::isValidProperties()
 
 void GenDateTime::showDebug()
 {
-    std::cout << std::endl << std::endl;
-    std::cout << "Column type\t\t- DATETIME" << std::endl;
     showGeneralInfo();
-    std::cout << "Date format\t\t- " << (m_format == DateFormat::DATE ? "DATE" 
+    std::cout << "Date format\r"<< "\033[24C- " << (m_format == DateFormat::DATE ? "DATE" 
         : m_format == DateFormat::TIME ? "TIME" 
         : m_format == DateFormat::DATETIME ? "DATETIME" 
         : "Unknown") << std::endl;
-    std::cout << "Date range\t\t- " << dateToStr(m_begin) << " - " << dateToStr(m_end) << std::endl;
+    outputDebugLine("Date range", 24, dateToStr(m_begin) + " - " + dateToStr(m_end));
 }
 
 //______________String______________
 
-GenString::GenString() : m_maxCountRows(0)
+GenString::GenString() : Column(), m_maxCountRows(0)
 {}
+
+GenString::GenString(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column("STRING", name, countRows, duplicates, flgShuffle, flgDebug)
+{
+}
+
+GenString::GenString(std::string name, size_t countRows, bool flgShuffle, bool flgDebug) : 
+Column("STRING", name, countRows, flgShuffle, flgDebug)
+{
+}
 
 void GenString::addColumn(Column* column, std::string prefix,  std::string suffix)
 {
@@ -893,35 +903,54 @@ void GenString::addColumn(Column* column, std::string prefix,  std::string suffi
 
 void GenString::showConfig()
 {
-    std::cout << "Name:\t\t";
+    std::cout << "String Config\r" << "\033[24C" << "- \"";
     for(int i = 0; i < m_vecColumns.size(); i++){
-        std::cout << "/ \"" << m_vecColumns[i]->getName() << "\" /\t";
+        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->getName() << ">"  << m_vecSuffix[i];
     }
-    std::cout << std::endl;
-    std::cout << "Type:\t\t";
+    std::cout << "\"" << std::endl;
+    std::cout << "- Name:" << std::endl;
+    std::cout << "- Type:" << std::endl;
+    std::cout << "- Count rows:" << std::endl;
     for(int i = 0; i < m_vecColumns.size(); i++){
-        std::cout << m_vecColumns[i]->getTypeName() << "\t\t";
+        int shift = 16 * (i + 1);
+        std::cout << "\033[3A";
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_name << "\"" << std::endl;
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_type << "\"" << std::endl;
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_countRows << "\"" << std::endl;
     }
-    std::cout << std::endl;
-    std::cout << "Count rows:\t";
-    for(int i = 0; i < m_vecColumns.size(); i++){
-        std::cout << m_vecColumns[i]->getCountRows() << "\t\t";
-    }
-    std::cout << std::endl << std::endl;
-    std::cout << "String:\t";
-    for(int i = 0; i < m_vecColumns.size(); i++){
-        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->getTypeName() << ">"  << m_vecSuffix[i];
-    }
-    std::cout << std::endl;
 }
 
 const std::vector<std::string> &GenString::genRows()
 {
-    for(int i = 0; i < m_vecColumns.size(); i++){
-        m_vecColumns[i]->genRows();
+    m_errMesage.clear();
+    if(!isValidProperties()){
+        std::cout << "GenString: genRows: Error: " << m_errMesage << std::endl;
+        return m_vecRows;
+    }
+    m_vecRows.clear();
+    if(m_flgDebug){
+        showDebug();
     }
     size_t stillRows = m_maxCountRows;
     std::uniform_real_distribution<double> distrPercent(0.0, 1.0);
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        if(m_flgDebug && !m_vecColumns[i]->m_flgDebug){
+            outputDebugLine("Generation " + m_vecColumns[i]->m_type, 24, "START");
+            auto start = std::chrono::high_resolution_clock::now();
+            m_vecColumns[i]->genRows();
+            auto finish = std::chrono::high_resolution_clock::now();
+            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+            outputDebugLine("Generation " + m_vecColumns[i]->m_type, 24, "FINISHED");
+            outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
+        }else{
+            m_vecColumns[i]->genRows();
+        }
+    }
+    equalizeVec();
+    if(m_flgDebug){
+        outputDebugLine("Gluing rows", 24, "START");
+    }
+    auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
             glueString(stillRows);
@@ -947,13 +976,22 @@ const std::vector<std::string> &GenString::genRows()
             }
         }
     }
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    if(m_flgDebug){
+        outputDebugLine("Gluing rows", 24, "FINISHED");
+        outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
+    }
+    if(m_flgShuffle){
+        shuffleRows();
+    }
     return m_vecRows;
 }
 
 std::string GenString::glueString(size_t& stillRows)
 {
     std::string str;
-    std::uniform_int_distribution<size_t> distRow(0, stillRows);
+    std::uniform_int_distribution<size_t> distRow(0, stillRows - 1);
     stillRows--;
     size_t index = distRow(m_gen);
     for(size_t i = 0; i < m_vecColumns.size(); i++){
@@ -965,4 +1003,34 @@ std::string GenString::glueString(size_t& stillRows)
     }
     m_vecRows.push_back(str);
     return str;
+}
+
+void GenString::equalizeVec()
+{
+    for(int i = 0; i < m_vecColumns.size(); i++){
+        if(m_vecColumns[i]->m_countRows < m_maxCountRows){
+            m_vecColumns[i]->m_vecRows.resize(m_maxCountRows, "");
+        }
+    }
+}
+
+bool GenString::isValidProperties()
+{
+    std::string errMsg = "\nIncorrect properties: ";
+    bool flg = true;
+    if(!m_flgUnRegDupl){
+        flg = isValidDuplicate(errMsg);
+        size_t maxCountDupl = m_countDupl / 2;
+        if(m_maxCountRows < m_countUniq + maxCountDupl){
+            errMsg += "\n\tNot enough entries in side columns.";
+            flg = false;
+        }
+    }
+    return flg;
+}
+
+void GenString::showDebug()
+{
+    showGeneralInfo();
+    showConfig();
 }

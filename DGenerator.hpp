@@ -52,6 +52,10 @@ protected:
     void removeRow(size_t index);
     bool isValidDuplicate(std::string& errMsg);
     void showGeneralInfo();
+    template <typename T>
+    void outputDebugLine(const std::string& lable, unsigned int gap, const T& value);
+    template <typename T1, typename T2>
+    void outputDebugLine(const std::string& lable, unsigned int gap, bool condition, const T1& tr, const T2& fls);
 protected:
     std::string m_name;
     std::vector<std::string> m_vecRows;
@@ -166,10 +170,15 @@ private:
     std::chrono::sys_seconds m_end;
 };
 
+// Column(std::string type, std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+// Column(std::string type, std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
+
 class GenString : public Column
 {
 public:
     GenString();
+    GenString(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
+    GenString(std::string name, size_t countRows, bool flgShuffle, bool flgDebug);
     void addColumn(Column* column, std::string prefix = "",  std::string suffix = "");
     // void editColumn();
     // void removeColumn();
@@ -200,7 +209,10 @@ private:
 
         Сепоратор - пробел " ", тире "-" или нижнее подчеркивание "_".  
     */
-std::string glueString(size_t& stillRows);
+    std::string glueString(size_t& stillRows);
+    void equalizeVec();
+    bool isValidProperties();
+    void showDebug();
 private:
     std::vector<Column*> m_vecColumns;
     std::vector<std::string> m_vecSuffix;
