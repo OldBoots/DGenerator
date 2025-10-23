@@ -731,6 +731,13 @@ Column("DATETIME", name, countRows, flgShuffle, flgDebug), m_format(format)
     setRange(begin, end);
 }
 
+GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::chrono::seconds step, bool flgDebug) : 
+Column("DATETIME", name, countRows, false, flgDebug), m_step(step), m_flgSequence(true)
+{
+    setFormat(format);
+    setRange(begin, begin);
+}
+
 void GenDateTime::setRange(std::string begin, std::string end)
 {
     m_begin = strToDate(begin);
@@ -755,6 +762,16 @@ void GenDateTime::setFormat(DateFormat format)
         m_DateFormatGive = "%d-%d-%d %d:%d:%d";
         break;
     }
+}
+
+void GenDateTime::setFlgSequence(bool flg)
+{
+    m_flgSequence = flg;
+}
+
+bool GenDateTime::isSequence()
+{
+    return m_flgSequence;
 }
 
 std::chrono::sys_seconds GenDateTime::getBegin()
@@ -790,9 +807,16 @@ const std::vector<std::string> &GenDateTime::genRows()
     }
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
-        for(size_t i = 0; i < m_countRows; i++){
-            genValue(distDays, distSeconds, setUnique);
+        if(m_flgSequence){
+            for(size_t i = 0; i < m_countRows; i++){
+                m_vecRows.push_back(dateToStr(m_begin + m_step * i));
+            }
+        }else{
+            for(size_t i = 0; i < m_countRows; i++){
+                genValue(distDays, distSeconds, setUnique);
+            }
         }
+        
     }else{
         if(m_duplicates == 1){
             genValue(distDays, distSeconds, setUnique);
@@ -886,7 +910,7 @@ bool GenDateTime::isValidProperties()
         errMsg += "\n\tIncorrect range.";
         flg = false;
     }
-    if(!m_flgUnRegDupl){
+    if(!m_flgUnRegDupl && !m_flgSequence){
         flg = isValidDuplicate(errMsg);
         size_t maxCountDupl = m_countDupl / 2;
         if(m_format == DateFormat::DATE){

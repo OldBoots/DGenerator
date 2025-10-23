@@ -157,8 +157,11 @@ public:
     GenDateTime();
     GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug);
     GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug);
+    GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::chrono::seconds step, bool flgDebug);
     void setRange(std::string begin, std::string end);
     void setFormat(DateFormat format);
+    void setFlgSequence(bool flg);
+    bool isSequence();
     std::chrono::sys_seconds getBegin();
     std::chrono::sys_seconds getEnd();
     GenDateTime::DateFormat getFormat();
@@ -175,6 +178,8 @@ private:
     std::string m_DateFormatGive;
     std::chrono::sys_seconds m_begin;
     std::chrono::sys_seconds m_end;
+    std::chrono::seconds m_step;
+    bool m_flgSequence;
 };
 
 class GenString : public Column
