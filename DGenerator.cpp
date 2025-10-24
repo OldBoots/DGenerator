@@ -1,5 +1,6 @@
 #include "DGenerator.hpp"
 
+
 namespace
 {
     DateComponents extractDateComponents(const std::chrono::sys_seconds &dateTime)
@@ -28,28 +29,32 @@ namespace
 
 //______________Column______________
 
-Column::Column() : m_name(""), m_flgUnRegDupl(false), m_flgShuffle(false), m_duplicates(0), m_countDupl(0), 
-m_countRows(0), m_rd(), m_gen(m_rd()), m_type("COLUMN")
+Column::Column() : m_flgUnRegDupl(false), m_flgShuffle(false), m_duplicates(0), m_countDupl(0), 
+m_countRows(0), m_rd(), m_gen(m_rd())
 {
 }
 
-Column::Column(std::string type, std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
-m_name(name), m_flgUnRegDupl(false), m_flgShuffle(flgShuffle), m_flgDebug(flgDebug), m_duplicates(duplicates), 
-m_countRows(countRows), m_rd(), m_gen(m_rd()), m_type(type)
+Column::Column(size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+m_flgUnRegDupl(false), m_flgShuffle(flgShuffle), m_flgDebug(flgDebug), m_duplicates(duplicates), 
+m_countRows(countRows), m_rd(), m_gen(m_rd())
 {
     calcUniqAndDupl();
 }
 
-Column::Column(std::string type, std::string name, size_t countRows, bool flgShuffle, bool flgDebug) : m_name(name), 
+Column::Column(size_t countRows, bool flgShuffle, bool flgDebug) :  
 m_flgUnRegDupl(true), m_flgShuffle(flgShuffle), m_flgDebug(flgDebug), m_duplicates(0), m_countRows(countRows), m_rd(), 
-m_gen(m_rd()), m_type(type)
+m_gen(m_rd())
 {
     calcUniqAndDupl();
 }
 
-void Column::setName(std::string name)
+void Column::setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length)
 {
-    m_name = name;
+    m_config.name = name;
+    m_config.nullable = nullable;
+    m_config.unique = unique;
+    m_config.primaryKey = primaryKey;
+    m_config.length = length;
 }
 
 void Column::shuffleRows()
@@ -84,22 +89,17 @@ void Column::setFlgDebug(bool flg)
     m_flgDebug = flg;
 }
 
+const ColumnConfig &Column::getConfig() const
+{
+    return m_config;
+}
+
 std::string Column::getRow(size_t index) const
 {
     if(index < m_vecRows.size() && index >= 0){
         return m_vecRows[index];
     }
     return "";
-}
-
-std::string Column::getName()
-{
-    return m_name;
-}
-
-std::string Column::getTypeName()
-{
-    return m_type;
 }
 
 size_t Column::getCountRows()
@@ -176,8 +176,8 @@ const std::vector<std::string> &Column::genRows()
 void Column::showGeneralInfo()
 {
     std::cout << std::endl;
-    outputDebugLine("Column name", 24, m_name);
-    outputDebugLine("Column type", 24, m_type);
+    outputDebugLine("Column name", 24, m_config.name);
+    outputDebugLine("Column type", 24, m_config.type);
     outputDebugLine("Duplicates registration", 24, m_flgUnRegDupl, "NO", "YES");
     if(!m_flgUnRegDupl){
         outputDebugLine("Duplicates", 24, m_duplicates);
@@ -214,23 +214,26 @@ void Column::calcUniqAndDupl()
 
 //______________Int______________
 
-GenInt::GenInt() : Column(), m_min(0), m_max(0)
+GenInt::GenInt() : c_objId(s_nextId++)
 {
 }
 
-GenInt::GenInt(std::string name, int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column("INT", name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
+GenInt::GenInt(int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
+    setDefaultConfig();
 }
 
-GenInt::GenInt(std::string name, int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
-Column("INT", name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
+GenInt::GenInt(int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
+Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
+    setDefaultConfig();
 }
 
-GenInt::GenInt(std::string name, int start, int step, size_t countRows, bool flgDebug) : 
-Column("INT", name, countRows, false, flgDebug), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
+GenInt::GenInt(int start, int step, size_t countRows, bool flgDebug) : 
+Column(countRows, false, flgDebug), c_objId(s_nextId++), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
 {
+    setDefaultConfig();
 }
 
 void GenInt::setRange(int min, int max)
@@ -320,6 +323,15 @@ void GenInt::showDebug()
     outputDebugLine("Is Sequence", 24, m_flgSequence, "YES", "NO");
 }
 
+void GenInt::setDefaultConfig()
+{
+    m_config.name = "INT" + std::to_string(c_objId);
+    m_config.type = "INT";
+    m_config.nullable = true;
+    m_config.primaryKey = false;
+    m_config.unique = false;
+}
+
 const std::vector<std::string>& GenInt::genRows()
 {
     m_errMesage.clear();
@@ -384,23 +396,26 @@ const std::vector<std::string>& GenInt::genRows()
 
 //______________Float______________
 
-GenFloat::GenFloat() : Column(), m_min(0), m_max(0)
+GenFloat::GenFloat() : c_objId(s_nextId++), m_min(0), m_max(0)
 {
 }
 
-GenFloat::GenFloat(std::string name, double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column("FLOAT", name, countRows, duplicates, flgShuffle, flgDebug), m_min(min), m_max(max)
+GenFloat::GenFloat(double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
+    setDefaultConfig();
 }
 
-GenFloat::GenFloat(std::string name, double min, double max, size_t countRows, bool flgShuffle, bool flgDebug) : 
-Column("FLOAT", name, countRows, flgShuffle, flgDebug), m_min(min), m_max(max)
+GenFloat::GenFloat(double min, double max, size_t countRows, bool flgShuffle, bool flgDebug) : 
+Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
+    setDefaultConfig();
 }
 
-GenFloat::GenFloat(std::string name, double start, double step, size_t countRows, bool flgDebug) :
-Column("FLOAT", name, countRows, false, flgDebug), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
+GenFloat::GenFloat(double start, double step, size_t countRows, bool flgDebug) :
+Column(countRows, false, flgDebug), c_objId(s_nextId++), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
 {
+    setDefaultConfig();
 }
 
 const std::vector<std::string> &GenFloat::genRows()
@@ -525,24 +540,35 @@ void GenFloat::showDebug()
     outputDebugLine("Is sequence", 24, m_flgSequence, "YES", "NO");
 }
 
+void GenFloat::setDefaultConfig()
+{
+    m_config.name = "FLOAT" + std::to_string(c_objId);
+    m_config.type = "FLOAT";
+    m_config.nullable = true;
+    m_config.primaryKey = false;
+    m_config.unique = false;
+}
+
 //______________Word______________
 
-GenWord::GenWord() : Column(), m_minLength(0), m_maxLength(0), m_capitalLetter(0), m_flgUpperCase(0)
+GenWord::GenWord() : c_objId(s_nextId++), m_minLength(0), m_maxLength(0), m_capitalLetter(0), m_flgUpperCase(0)
 {
 }
 
-GenWord::GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double duplicates, 
+GenWord::GenWord(size_t minLength, size_t maxLength, size_t countRows, double duplicates, 
     double capitalLetter, bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
-    Column("WORD", name, countRows, duplicates, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
-    m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
-{    
-}
-
-GenWord::GenWord(std::string name, size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, 
-    bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
-    Column("WORD", name, countRows, flgShuffle, flgDebug), m_minLength(minLength), m_maxLength(maxLength), 
+    Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {
+    setDefaultConfig();
+}
+
+GenWord::GenWord(size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, 
+    bool flgUpperCase, bool flgShuffle, bool flgDebug) : 
+    Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_minLength(minLength), m_maxLength(maxLength), 
+    m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
+{
+    setDefaultConfig();
 }
 
 void GenWord::setRange(size_t minLength, size_t maxLength)
@@ -654,6 +680,15 @@ bool GenWord::isValidProperties()
     return flg;
 }
 
+void GenWord::setDefaultConfig()
+{
+    m_config.name = "WORD" + std::to_string(c_objId);
+    m_config.type = "VARCHAR";
+    m_config.nullable = true;
+    m_config.primaryKey = false;
+    m_config.unique = false;
+}
+
 const std::vector<std::string>& GenWord::genRows()
 {
     m_errMesage.clear();
@@ -712,28 +747,31 @@ const std::vector<std::string>& GenWord::genRows()
 
 //______________Date______________
 
-GenDateTime::GenDateTime() : Column() 
+GenDateTime::GenDateTime() : c_objId(s_nextId++) 
 {
     setFormat(DateFormat::DATETIME);
 }
 
-GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column("DATETIME", name, countRows, duplicates, flgShuffle, flgDebug), m_format(format)
+GenDateTime::GenDateTime(size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_format(format)
 {
+    setDefaultConfig();
     setFormat(format);
     setRange(begin, end);
 }
 
-GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug) : 
-Column("DATETIME", name, countRows, flgShuffle, flgDebug), m_format(format)
+GenDateTime::GenDateTime(size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug) : 
+Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_format(format)
 {
+    setDefaultConfig();
     setFormat(format);
     setRange(begin, end);
 }
 
-GenDateTime::GenDateTime(std::string name, size_t countRows, DateFormat format, std::string begin, std::chrono::seconds step, bool flgDebug) : 
-Column("DATETIME", name, countRows, false, flgDebug), m_step(step), m_flgSequence(true)
+GenDateTime::GenDateTime(size_t countRows, DateFormat format, std::string begin, std::chrono::seconds step, bool flgDebug) : 
+Column(countRows, false, flgDebug), c_objId(s_nextId++), m_step(step), m_flgSequence(true)
 {
+    setDefaultConfig();
     setFormat(format);
     setRange(begin, begin);
 }
@@ -943,24 +981,36 @@ void GenDateTime::showDebug()
     outputDebugLine("Date range", 24, dateToStr(m_begin) + " - " + dateToStr(m_end));
 }
 
+void GenDateTime::setDefaultConfig()
+{
+    m_config.name = "DATATIME" + std::to_string(c_objId);
+    m_config.type = "DATATIME";
+    m_config.nullable = true;
+    m_config.primaryKey = false;
+    m_config.unique = false;
+}
+
 //______________String______________
 
-GenString::GenString() : Column(), m_maxCountRows(0)
+GenString::GenString() : c_objId(s_nextId++), m_maxCountRows(0)
 {}
 
-GenString::GenString(std::string name, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
-Column("STRING", name, countRows, duplicates, flgShuffle, flgDebug)
+GenString::GenString(size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
+Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++)
 {
+    setDefaultConfig();
 }
 
-GenString::GenString(std::string name, size_t countRows, bool flgShuffle, bool flgDebug) : 
-Column("STRING", name, countRows, flgShuffle, flgDebug)
+GenString::GenString(size_t countRows, bool flgShuffle, bool flgDebug) : 
+Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++)
 {
+    setDefaultConfig();
 }
 
-GenString::GenString(std::string name, size_t countRows, bool flgDebug) : 
-Column("STRING", name, countRows, false, flgDebug), m_flgSequence(true)
+GenString::GenString(size_t countRows, bool flgDebug) : 
+Column(countRows, false, flgDebug), m_flgSequence(true), c_objId(s_nextId++)
 {
+    setDefaultConfig();
 }
 
 void GenString::addColumn(Column* column, std::string prefix,  std::string suffix)
@@ -988,7 +1038,7 @@ void GenString::showConfig()
 {
     std::cout << "String Config\r" << "\033[24C" << "- \"";
     for(int i = 0; i < m_vecColumns.size(); i++){
-        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->getName() << ">"  << m_vecSuffix[i];
+        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->m_config.name << ">"  << m_vecSuffix[i];
     }
     std::cout << "\"" << std::endl;
     std::cout << "- Name:" << std::endl;
@@ -997,8 +1047,8 @@ void GenString::showConfig()
     for(int i = 0; i < m_vecColumns.size(); i++){
         int shift = 16 * (i + 1);
         std::cout << "\033[3A";
-        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_name << "\"" << std::endl;
-        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_type << "\"" << std::endl;
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_config.name << "\"" << std::endl;
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_config.type << "\"" << std::endl;
         std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_countRows << "\"" << std::endl;
     }
 }
@@ -1016,12 +1066,12 @@ const std::vector<std::string> &GenString::genRows()
     }
     for(int i = 0; i < m_vecColumns.size(); i++){
         if(m_flgDebug && !m_vecColumns[i]->m_flgDebug){
-            outputDebugLine("Generation " + m_vecColumns[i]->m_type, 24, "START");
+            outputDebugLine("Generation " + m_vecColumns[i]->m_config.type, 24, "START");
             auto start = std::chrono::high_resolution_clock::now();
             m_vecColumns[i]->genRows();
             auto finish = std::chrono::high_resolution_clock::now();
             auto time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-            outputDebugLine("Generation " + m_vecColumns[i]->m_type, 24, "FINISHED");
+            outputDebugLine("Generation " + m_vecColumns[i]->m_config.type, 24, "FINISHED");
             outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
         }else{
             m_vecColumns[i]->genRows();
@@ -1117,6 +1167,15 @@ bool GenString::isValidProperties()
         }
     }
     return flg;
+}
+
+void GenString::setDefaultConfig()
+{
+    m_config.name = "STRING" + std::to_string(c_objId);
+    m_config.type = "VARCHAR";
+    m_config.nullable = true;
+    m_config.primaryKey = false;
+    m_config.unique = false;
 }
 
 void GenString::showDebug()
