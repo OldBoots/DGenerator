@@ -1183,3 +1183,29 @@ void GenString::showDebug()
     showGeneralInfo();
     showConfig();
 }
+
+//______________GenSqlScript______________
+
+// GenSqlScript::GenSqlScript()
+// {
+// }
+
+// void GenSqlScript::setFileName(std::string fileName)
+// {
+//     m_fileName = fileName;
+// }
+
+// void GenSqlScript::setTableName(std::string tableName)
+// {
+//     m_tableName = tableName;
+// }
+
+// std::string GenSqlScript::getFileName()
+// {
+//     return m_fileName;
+// }
+
+// void GenSqlScript::createTable(std::string tableName)
+// {
+
+// }

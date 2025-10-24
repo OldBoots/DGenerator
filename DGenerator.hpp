@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>
 #include <set>
+#include <atomic>
 #include <random>
 #include <chrono>
 #include <iomanip>
@@ -103,8 +104,8 @@ private:
     void showDebug();
     void setDefaultConfig();
 private:
-    static int s_nextId;
-    const int c_objId;
+    static inline std::atomic<unsigned int> s_nextId;
+    const unsigned int c_objId;
     int m_min;
     int m_max;
     bool m_flgSequence;
@@ -130,8 +131,8 @@ private:
     void showDebug();
     void setDefaultConfig();
 private:
-    static int s_nextId;
-    const int c_objId;
+    static inline std::atomic<unsigned int> s_nextId;
+    const unsigned int c_objId;
     double m_min;
     double m_max;
     bool m_flgSequence;
@@ -160,8 +161,8 @@ private:
     bool isValidProperties();
     void setDefaultConfig();
 private:
-    static int s_nextId;
-    const int c_objId;
+    static inline std::atomic<unsigned int> s_nextId;
+    const unsigned int c_objId;
     size_t m_minLength;
     size_t m_maxLength;
     double m_capitalLetter;
@@ -192,8 +193,8 @@ private:
     void showDebug();
     void setDefaultConfig();
 private:
-    static int s_nextId;
-    const int c_objId;
+    static inline std::atomic<unsigned int> s_nextId;
+    const unsigned int c_objId;
     DateFormat m_format;
     std::string m_DateFormatGet;
     std::string m_DateFormatGive;
@@ -222,13 +223,38 @@ private:
     bool isValidProperties();
     void setDefaultConfig();
 private:
-    static int s_nextId;
-    const int c_objId;
+    static inline std::atomic<unsigned int> s_nextId;
+    const unsigned int c_objId;
     std::vector<Column*> m_vecColumns;
     std::vector<std::string> m_vecSuffix;
     std::vector<std::string> m_vecPrefix;
     size_t m_maxCountRows;
     bool m_flgSequence;
 };
+
+// class Table
+// {
+// public:
+//     Table();
+// private:
+// };
+
+// class GenSqlScript
+// {
+// public:
+//     GenSqlScript();
+//     void setFileName(std::string fileName);
+//     void setTableName(std::string tableName);
+//     std::string getFileName();
+//     std::string getTableName();
+//     void createTable(std::string tableName);
+//     void fillTable();
+//     void clearFile();
+// private:
+//     std::string m_fileName;
+//     std::string m_tableName;
+//     std::ofstream m_file;
+//     std::vector<Column*> m_vecColumns(); 
+// };
 
 #endif
