@@ -1055,15 +1055,6 @@ void GenString::showConfig()
 
 const std::vector<std::string> &GenString::genRows()
 {
-    m_errMesage.clear();
-    if(!isValidProperties()){
-        std::cout << "GenString: genRows: Error: " << m_errMesage << std::endl;
-        return m_vecRows;
-    }
-    m_vecRows.clear();
-    if(m_flgDebug){
-        showDebug();
-    }
     for(int i = 0; i < m_vecColumns.size(); i++){
         if(m_flgDebug && !m_vecColumns[i]->m_flgDebug){
             outputDebugLine("Generation " + m_vecColumns[i]->m_config.type, 24, "START");
@@ -1077,7 +1068,23 @@ const std::vector<std::string> &GenString::genRows()
             m_vecColumns[i]->genRows();
         }
     }
-    equalizeVec();
+    joinColumns();
+    return m_vecRows;
+}
+
+const std::vector<std::string> &GenString::joinColumns()
+{
+    m_errMesage.clear();
+    if(!isValidProperties()){
+        std::cout << "GenString: joinColumns: Error: " << m_errMesage << std::endl;
+        return m_vecRows;
+    }
+    m_vecRows.clear();
+    if(m_flgDebug){
+        showDebug();
+    }
+    std::vector<std::vector<std::string>> matValues;
+    copyVectors(matValues);
     size_t count; 
     if(m_flgSequence){
         count = 0;
@@ -1091,15 +1098,15 @@ const std::vector<std::string> &GenString::genRows()
     auto start = std::chrono::high_resolution_clock::now();
     if(m_flgUnRegDupl){
         for(size_t i = 0; i < m_countRows; i++){
-            glueString(count);
+            glueString(matValues, count);
         }
     }else{
         if(m_duplicates == 1){
-            glueString(count);
+            glueString(matValues, count);
             m_vecRows.resize(m_countRows, m_vecRows[0]);
         }else{
             while(m_vecRows.size() < m_countUniq){
-                glueString(count);
+                glueString(matValues, count);
             }
             size_t stillDupl = m_countDupl;
             while(stillDupl > 0){
@@ -1107,7 +1114,7 @@ const std::vector<std::string> &GenString::genRows()
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl--;
                 }else{
-                    glueString(count);
+                    glueString(matValues, count);
                     m_vecRows.push_back(m_vecRows.back());
                     stillDupl -= 2;
                 }
@@ -1126,7 +1133,7 @@ const std::vector<std::string> &GenString::genRows()
     return m_vecRows;
 }
 
-std::string GenString::glueString(size_t& count)
+std::string GenString::glueString(std::vector<std::vector<std::string>>& matValues, size_t& count)
 {
     std::string str;
     size_t index;
@@ -1138,18 +1145,24 @@ std::string GenString::glueString(size_t& count)
         index = distRow(m_gen);
         count--;
     }
-    for(size_t i = 0; i < m_vecColumns.size(); i++){
-        str += m_vecPrefix[i] + m_vecColumns[i]->getRow(index) + m_vecSuffix[i];
+    for(size_t i = 0; i < matValues.size(); i++){
+        str += m_vecPrefix[i] + matValues[i][index] + m_vecSuffix[i];
+        if(!m_flgSequence){
+            matValues[i][index]; 
+            std::swap(matValues[i][index], matValues[i].back());
+        }
     }
     m_vecRows.push_back(str);
     return str;
 }
 
-void GenString::equalizeVec()
+void GenString::copyVectors(std::vector<std::vector<std::string>>& matValues)
 {
+    matValues.clear();
     for(int i = 0; i < m_vecColumns.size(); i++){
-        if(m_vecColumns[i]->m_countRows < m_maxCountRows){
-            m_vecColumns[i]->m_vecRows.resize(m_maxCountRows, "");
+        matValues.push_back(m_vecColumns[i]->m_vecRows);
+        if(matValues[i].size() < m_maxCountRows){
+            matValues[i].resize(m_maxCountRows, "");
         }
     }
 }
@@ -1184,28 +1197,79 @@ void GenString::showDebug()
     showConfig();
 }
 
+//______________Table______________
+
+Table::Table()
+{
+}
+
+Table::Table(std::string tableName) : m_tableName(tableName)
+{
+}
+
+void Table::setTableName(std::string tableName)
+{
+    m_tableName = tableName;
+}
+
+std::string Table::getTableName()
+{
+    return m_tableName;
+}
+
+void Table::readColumn(Column *column)
+{
+    m_vecColConfig.push_back(column->getConfig());
+    m_matValues.push_back(column->getRows());
+    if(m_countRows < column->getCountRows()){
+        m_countRows = column->getCountRows();
+    }
+    equalizeVectors();
+}
+
+void Table::showTable()
+{
+    for(int i = 0; i < m_matValues.size(); i++){
+        std::string shift = std::to_string(32 * i);
+        std::cout << m_vecColConfig[i].name << "\r\033[" + shift + "C";
+    }
+    std::cout << std::endl;
+    for(int j = 0; j < m_countRows; j++){
+        for(int i = 0; i < m_matValues.size(); i++){
+            std::string shift = std::to_string(32 * i);
+            std::cout << m_matValues[i][j] << "\r\033[" + shift + "C";
+        }
+    }
+}
+
+void Table::equalizeVectors()
+{
+    for(int i = 0; i < m_matValues.size(); i++){
+        if(m_matValues[i].size() < m_countRows){
+            m_matValues[i].resize(m_countRows, "");
+        }
+    }
+}
+
 //______________GenSqlScript______________
 
-// GenSqlScript::GenSqlScript()
-// {
-// }
+GenSqlScript::GenSqlScript()
+{
+}
 
-// void GenSqlScript::setFileName(std::string fileName)
-// {
-//     m_fileName = fileName;
-// }
+GenSqlScript::GenSqlScript(std::string fileName) : m_fileName(fileName)
+{
+}
 
-// void GenSqlScript::setTableName(std::string tableName)
-// {
-//     m_tableName = tableName;
-// }
+void GenSqlScript::createTable(Table table, bool overwriteFile, bool overwriteTable)
+{
+    if(overwriteFile){
+        m_file.open(m_fileName, std::ios::trunc);
+    }else{
+        m_file.open(m_fileName, std::ios::app);
+    }
+    if(overwriteTable){
+        m_file << "";
+    }
+}
 
-// std::string GenSqlScript::getFileName()
-// {
-//     return m_fileName;
-// }
-
-// void GenSqlScript::createTable(std::string tableName)
-// {
-
-// }

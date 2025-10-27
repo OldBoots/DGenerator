@@ -25,14 +25,14 @@ struct DateComponents
 };
 
 struct ColumnConfig
-    {
-        std::string name;
-        std::string type;
-        bool nullable;
-        bool unique;
-        bool primaryKey;
-        size_t length;
-    };
+{
+    std::string name;
+    std::string type;
+    bool nullable;
+    bool unique;
+    bool primaryKey;
+    size_t length;
+};
 
 class Column
 {
@@ -216,10 +216,11 @@ public:
     bool isSequence();
     void showConfig();
     const std::vector<std::string>& genRows() override;
+    const std::vector<std::string>& joinColumns();
 private:
-    void equalizeVec();
+    void copyVectors(std::vector<std::vector<std::string>>& matValues);
     void showDebug();
-    std::string glueString(size_t& stillRows);
+    std::string glueString(std::vector<std::vector<std::string>>& matValues, size_t& stillRows);
     bool isValidProperties();
     void setDefaultConfig();
 private:
@@ -232,29 +233,35 @@ private:
     bool m_flgSequence;
 };
 
-// class Table
-// {
-// public:
-//     Table();
-// private:
-// };
+class Table
+{
+public:
+    Table();
+    Table(std::string tableName);
+    void setTableName(std::string tableName);
+    std::string getTableName();
+    void readColumn(Column* column);
+    void showTable();
+private:
+    void equalizeVectors();
+private:
+    std::string m_tableName;
+    std::vector<ColumnConfig> m_vecColConfig;
+    std::vector<std::vector<std::string>> m_matValues;
+    size_t m_countRows;
+};
 
-// class GenSqlScript
-// {
-// public:
-//     GenSqlScript();
-//     void setFileName(std::string fileName);
-//     void setTableName(std::string tableName);
-//     std::string getFileName();
-//     std::string getTableName();
-//     void createTable(std::string tableName);
-//     void fillTable();
-//     void clearFile();
-// private:
-//     std::string m_fileName;
-//     std::string m_tableName;
-//     std::ofstream m_file;
-//     std::vector<Column*> m_vecColumns(); 
-// };
+class GenSqlScript
+{
+public:
+    GenSqlScript();
+    GenSqlScript(std::string fileName);
+    void createTable(Table table, bool overwriteFile = 0, bool overwriteTable = 0);
+    void insertRows(Table table, size_t contRows, bool overwriteFile = 0, bool overwriteRows = 0);
+    void clearFile();
+private:
+    std::string m_fileName;
+    std::ofstream m_file;
+};
 
 #endif
