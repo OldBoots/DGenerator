@@ -1217,9 +1217,19 @@ std::string Table::getTableName()
     return m_tableName;
 }
 
+const std::vector<ColumnConfig>& Table::getVecColumnConfig() const
+{
+    return m_vecColumnConfig;
+}
+
+const std::vector<std::vector<std::string>> &Table::getMatValues() const
+{
+    return m_matValues;
+}
+
 void Table::readColumn(Column *column)
 {
-    m_vecColConfig.push_back(column->getConfig());
+    m_vecColumnConfig.push_back(column->getConfig());
     m_matValues.push_back(column->getRows());
     if(m_countRows < column->getCountRows()){
         m_countRows = column->getCountRows();
@@ -1227,11 +1237,17 @@ void Table::readColumn(Column *column)
     equalizeVectors();
 }
 
+void Table::addAutoIncrementId(std::string idColumnName)
+{
+    m_idColumnName = idColumnName;
+    m_flgAutoIncrementId = true;
+}
+
 void Table::showTable()
 {
     for(int i = 0; i < m_matValues.size(); i++){
         std::string shift = std::to_string(32 * i);
-        std::cout << m_vecColConfig[i].name << "\r\033[" + shift + "C";
+        std::cout << m_vecColumnConfig[i].name << "\r\033[" + shift + "C";
     }
     std::cout << std::endl;
     for(int j = 0; j < m_countRows; j++){
@@ -1257,11 +1273,11 @@ GenSqlScript::GenSqlScript()
 {
 }
 
-GenSqlScript::GenSqlScript(std::string fileName) : m_fileName(fileName)
+GenSqlScript::GenSqlScript(std::string dbName, std::string fileName) : m_dbName(dbName), m_fileName(fileName)
 {
 }
 
-void GenSqlScript::createTable(Table table, bool overwriteFile, bool overwriteTable)
+void GenSqlScript::createTable(Table table, bool overwriteTable, bool overwriteFile)
 {
     if(overwriteFile){
         m_file.open(m_fileName, std::ios::trunc);
@@ -1269,7 +1285,34 @@ void GenSqlScript::createTable(Table table, bool overwriteFile, bool overwriteTa
         m_file.open(m_fileName, std::ios::app);
     }
     if(overwriteTable){
-        m_file << "";
+        m_file << "DROP TABLE IF EXISTS `" + m_dbName + "`.`" + table.getTableName() + "`;";
     }
+    m_file.close();
 }
 
+std::string GenSqlScript::writeColumnConf(Table table)
+{
+    std::string str;
+    std::vector<ColumnConfig> vecConfig = table.getVecColumnConfig();
+    for(int i = 0; i < vecConfig.size(); i++){
+        str += "`" + vecConfig[i].name + "` " + vecConfig[i].type;
+        if(vecConfig[i].length != 0){
+            str += "(" + std::to_string(vecConfig[i].length) + ")";
+        }
+        
+        if(vecConfig[i].primaryKey){
+            str += " PRIMARY KEY";
+        }else{
+            if(!vecConfig[i].nullable){
+                str += " NOT NULL";
+            }
+            if(vecConfig[i].unique){
+                str += " UNIQUE";
+            }
+        }
+        if(i < vecConfig.size() - 1){
+            str += ",\n";
+        }
+    }
+    return std::string();
+}

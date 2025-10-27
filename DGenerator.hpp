@@ -40,7 +40,7 @@ public:
     Column();
     Column(size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     Column(size_t countRows, bool flgShuffle, bool flgDebug);
-    void setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length);
+    void setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length = 0);
     void setCountRows(size_t count);
     void setDuplicate(double val);
     void setFlgShuffle(bool flg);
@@ -233,6 +233,53 @@ private:
     bool m_flgSequence;
 };
 
+class AutoIncrementId : public Column
+{
+public:
+    AutoIncrementId();
+private:
+
+};
+
+class A
+{
+public:
+    A(){}
+    virtual void method(){}
+protected:
+    
+private:
+
+};
+
+class B : public A
+{
+public:
+    B(){}
+private:
+    void method() override{}
+};
+
+class C : public B
+{
+public:
+    C(){}
+protected:
+    
+private:
+
+};
+
+class D : public B
+{
+public:
+    D(){}
+protected:
+    
+private:
+
+};
+
 class Table
 {
 public:
@@ -240,26 +287,35 @@ public:
     Table(std::string tableName);
     void setTableName(std::string tableName);
     std::string getTableName();
+    std::string getIdColumnName();
+    const std::vector<ColumnConfig>& getVecColumnConfig() const;
+    const std::vector<std::vector<std::string>>& getMatValues() const;
     void readColumn(Column* column);
+    void addAutoIncrementId(std::string idColumnName = "id");
     void showTable();
 private:
     void equalizeVectors();
 private:
     std::string m_tableName;
-    std::vector<ColumnConfig> m_vecColConfig;
+    std::vector<ColumnConfig> m_vecColumnConfig;
     std::vector<std::vector<std::string>> m_matValues;
     size_t m_countRows;
+    std::string m_idColumnName;
+    bool m_flgAutoIncrementId;
 };
 
 class GenSqlScript
 {
 public:
     GenSqlScript();
-    GenSqlScript(std::string fileName);
-    void createTable(Table table, bool overwriteFile = 0, bool overwriteTable = 0);
+    GenSqlScript(std::string m_dataBaseName, std::string fileName);
+    void createTable(Table table, bool overwriteTable = 0, bool overwriteFile = 0);
     void insertRows(Table table, size_t contRows, bool overwriteFile = 0, bool overwriteRows = 0);
     void clearFile();
 private:
+    std::string writeColumnConf(Table table);
+private:
+    std::string m_dbName;    
     std::string m_fileName;
     std::ofstream m_file;
 };
