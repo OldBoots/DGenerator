@@ -48,13 +48,9 @@ m_gen(m_rd())
     calcUniqAndDupl();
 }
 
-void Column::setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length)
+void Column::setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length, size_t count)
 {
-    m_config.name = name;
-    m_config.nullable = nullable;
-    m_config.unique = unique;
-    m_config.primaryKey = primaryKey;
-    m_config.length = length;
+    m_config.setConfig(name, nullable, unique, primaryKey, length, count);
 }
 
 void Column::shuffleRows()
@@ -176,8 +172,8 @@ const std::vector<std::string> &Column::genRows()
 void Column::showGeneralInfo()
 {
     std::cout << std::endl;
-    outputDebugLine("Column name", 24, m_config.name);
-    outputDebugLine("Column type", 24, m_config.type);
+    outputDebugLine("Column name", 24, m_config.m_name);
+    outputDebugLine("Column type", 24, m_config.m_type);
     outputDebugLine("Duplicates registration", 24, m_flgUnRegDupl, "NO", "YES");
     if(!m_flgUnRegDupl){
         outputDebugLine("Duplicates", 24, m_duplicates);
@@ -221,19 +217,19 @@ GenInt::GenInt() : c_objId(s_nextId++)
 GenInt::GenInt(int min, int max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
 Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("INT" + std::to_string(c_objId), "INT", true, false, false);
 }
 
 GenInt::GenInt(int min, int max, size_t countRows, bool flgShuffle, bool flgDebug) : 
 Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("INT" + std::to_string(c_objId), "INT", true, false, false);
 }
 
 GenInt::GenInt(int start, int step, size_t countRows, bool flgDebug) : 
 Column(countRows, false, flgDebug), c_objId(s_nextId++), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("INT" + std::to_string(c_objId), "INT", true, false, false);
 }
 
 void GenInt::setRange(int min, int max)
@@ -323,14 +319,15 @@ void GenInt::showDebug()
     outputDebugLine("Is Sequence", 24, m_flgSequence, "YES", "NO");
 }
 
-void GenInt::setDefaultConfig()
-{
-    m_config.name = "INT" + std::to_string(c_objId);
-    m_config.type = "INT";
-    m_config.nullable = true;
-    m_config.primaryKey = false;
-    m_config.unique = false;
-}
+// void GenInt::setDefaultConfig()
+// {
+//     // m_config.name = "INT" + std::to_string(c_objId);
+//     // m_config.type = "INT";
+//     // m_config.nullable = true;
+//     // m_config.primaryKey = false;
+//     // m_config.unique = false;
+    
+// }
 
 const std::vector<std::string>& GenInt::genRows()
 {
@@ -403,19 +400,19 @@ GenFloat::GenFloat() : c_objId(s_nextId++), m_min(0), m_max(0)
 GenFloat::GenFloat(double min, double max, size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
 Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("FLOAT" + std::to_string(c_objId), "FLOAT", true, false, false);
 }
 
 GenFloat::GenFloat(double min, double max, size_t countRows, bool flgShuffle, bool flgDebug) : 
 Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_min(min), m_max(max)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("FLOAT" + std::to_string(c_objId), "FLOAT", true, false, false);
 }
 
 GenFloat::GenFloat(double start, double step, size_t countRows, bool flgDebug) :
 Column(countRows, false, flgDebug), c_objId(s_nextId++), m_min(start), m_max(start), m_flgSequence(true), m_step(step)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("FLOAT" + std::to_string(c_objId), "FLOAT", true, false, false);
 }
 
 const std::vector<std::string> &GenFloat::genRows()
@@ -540,15 +537,6 @@ void GenFloat::showDebug()
     outputDebugLine("Is sequence", 24, m_flgSequence, "YES", "NO");
 }
 
-void GenFloat::setDefaultConfig()
-{
-    m_config.name = "FLOAT" + std::to_string(c_objId);
-    m_config.type = "FLOAT";
-    m_config.nullable = true;
-    m_config.primaryKey = false;
-    m_config.unique = false;
-}
-
 //______________Word______________
 
 GenWord::GenWord() : c_objId(s_nextId++), m_minLength(0), m_maxLength(0), m_capitalLetter(0), m_flgUpperCase(0)
@@ -560,7 +548,7 @@ GenWord::GenWord(size_t minLength, size_t maxLength, size_t countRows, double du
     Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("WORD" + std::to_string(c_objId), "VARCHAR", true, false, false, 100);
 }
 
 GenWord::GenWord(size_t minLength, size_t maxLength, size_t countRows, double capitalLetter, 
@@ -568,7 +556,7 @@ GenWord::GenWord(size_t minLength, size_t maxLength, size_t countRows, double ca
     Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_minLength(minLength), m_maxLength(maxLength), 
     m_capitalLetter(capitalLetter), m_flgUpperCase(flgUpperCase)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("WORD" + std::to_string(c_objId), "VARCHAR", true, false, false, 100);
 }
 
 void GenWord::setRange(size_t minLength, size_t maxLength)
@@ -680,15 +668,6 @@ bool GenWord::isValidProperties()
     return flg;
 }
 
-void GenWord::setDefaultConfig()
-{
-    m_config.name = "WORD" + std::to_string(c_objId);
-    m_config.type = "VARCHAR";
-    m_config.nullable = true;
-    m_config.primaryKey = false;
-    m_config.unique = false;
-}
-
 const std::vector<std::string>& GenWord::genRows()
 {
     m_errMesage.clear();
@@ -755,7 +734,7 @@ GenDateTime::GenDateTime() : c_objId(s_nextId++)
 GenDateTime::GenDateTime(size_t countRows, DateFormat format, std::string begin, std::string end, double duplicates, bool flgShuffle, bool flgDebug) : 
 Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_format(format)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("DATATIME" + std::to_string(c_objId), "DATATIME", true, false, false);
     setFormat(format);
     setRange(begin, end);
 }
@@ -763,7 +742,7 @@ Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++), m_form
 GenDateTime::GenDateTime(size_t countRows, DateFormat format, std::string begin, std::string end, bool flgShuffle, bool flgDebug) : 
 Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_format(format)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("DATATIME" + std::to_string(c_objId), "DATATIME", true, false, false);
     setFormat(format);
     setRange(begin, end);
 }
@@ -771,7 +750,7 @@ Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++), m_format(format)
 GenDateTime::GenDateTime(size_t countRows, DateFormat format, std::string begin, std::chrono::seconds step, bool flgDebug) : 
 Column(countRows, false, flgDebug), c_objId(s_nextId++), m_step(step), m_flgSequence(true)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("DATATIME" + std::to_string(c_objId), "DATATIME", true, false, false);
     setFormat(format);
     setRange(begin, begin);
 }
@@ -981,15 +960,6 @@ void GenDateTime::showDebug()
     outputDebugLine("Date range", 24, dateToStr(m_begin) + " - " + dateToStr(m_end));
 }
 
-void GenDateTime::setDefaultConfig()
-{
-    m_config.name = "DATATIME" + std::to_string(c_objId);
-    m_config.type = "DATATIME";
-    m_config.nullable = true;
-    m_config.primaryKey = false;
-    m_config.unique = false;
-}
-
 //______________String______________
 
 GenString::GenString() : c_objId(s_nextId++), m_maxCountRows(0)
@@ -998,19 +968,19 @@ GenString::GenString() : c_objId(s_nextId++), m_maxCountRows(0)
 GenString::GenString(size_t countRows, double duplicates, bool flgShuffle, bool flgDebug) : 
 Column(countRows, duplicates, flgShuffle, flgDebug), c_objId(s_nextId++)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("STRING" + std::to_string(c_objId), "VARCHAR", true, false, false, 100);
 }
 
 GenString::GenString(size_t countRows, bool flgShuffle, bool flgDebug) : 
 Column(countRows, flgShuffle, flgDebug), c_objId(s_nextId++)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("STRING" + std::to_string(c_objId), "VARCHAR", true, false, false, 100);
 }
 
 GenString::GenString(size_t countRows, bool flgDebug) : 
 Column(countRows, false, flgDebug), m_flgSequence(true), c_objId(s_nextId++)
 {
-    setDefaultConfig();
+    m_config = ColumnConfig("STRING" + std::to_string(c_objId), "VARCHAR", true, false, false, 100);
 }
 
 void GenString::addColumn(Column* column, std::string prefix,  std::string suffix)
@@ -1038,7 +1008,7 @@ void GenString::showConfig()
 {
     std::cout << "String Config\r" << "\033[24C" << "- \"";
     for(int i = 0; i < m_vecColumns.size(); i++){
-        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->m_config.name << ">"  << m_vecSuffix[i];
+        std::cout << m_vecPrefix[i] << "<" << m_vecColumns[i]->m_config.getName() << ">"  << m_vecSuffix[i];
     }
     std::cout << "\"" << std::endl;
     std::cout << "- Name:" << std::endl;
@@ -1047,8 +1017,8 @@ void GenString::showConfig()
     for(int i = 0; i < m_vecColumns.size(); i++){
         int shift = 16 * (i + 1);
         std::cout << "\033[3A";
-        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_config.name << "\"" << std::endl;
-        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_config.type << "\"" << std::endl;
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_config.getName() << "\"" << std::endl;
+        std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_config.getType() << "\"" << std::endl;
         std::cout  << "\033[" + std::to_string(shift) + "C" << "\"" << m_vecColumns[i]->m_countRows << "\"" << std::endl;
     }
 }
@@ -1057,12 +1027,12 @@ const std::vector<std::string> &GenString::genRows()
 {
     for(int i = 0; i < m_vecColumns.size(); i++){
         if(m_flgDebug && !m_vecColumns[i]->m_flgDebug){
-            outputDebugLine("Generation " + m_vecColumns[i]->m_config.type, 24, "START");
+            outputDebugLine("Generation " + m_vecColumns[i]->m_config.getType(), 24, "START");
             auto start = std::chrono::high_resolution_clock::now();
             m_vecColumns[i]->genRows();
             auto finish = std::chrono::high_resolution_clock::now();
             auto time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-            outputDebugLine("Generation " + m_vecColumns[i]->m_config.type, 24, "FINISHED");
+            outputDebugLine("Generation " + m_vecColumns[i]->m_config.getType(), 24, "FINISHED");
             outputDebugLine("Time", 24, std::to_string(time.count()) + " ms");
         }else{
             m_vecColumns[i]->genRows();
@@ -1182,19 +1152,76 @@ bool GenString::isValidProperties()
     return flg;
 }
 
-void GenString::setDefaultConfig()
-{
-    m_config.name = "STRING" + std::to_string(c_objId);
-    m_config.type = "VARCHAR";
-    m_config.nullable = true;
-    m_config.primaryKey = false;
-    m_config.unique = false;
-}
-
 void GenString::showDebug()
 {
     showGeneralInfo();
     showConfig();
+}
+
+//______________ColumnConfig______________
+
+ColumnConfig::ColumnConfig()
+{
+}
+
+ColumnConfig::ColumnConfig(std::string name, std::string type, size_t length, size_t count) : 
+m_name(name), m_type(type), m_empty(true), m_nullable(true), m_primary(false), m_unique(false), m_length(length), m_count(count)
+{
+}
+
+ColumnConfig::ColumnConfig(std::string name, std::string type, bool nullable, bool unique, bool primary, size_t length, size_t count) :
+m_name(name), m_type(type), m_empty(false), m_nullable(nullable), m_primary(primary), m_unique(unique), m_length(length), m_count(count)
+{
+}
+
+std::string ColumnConfig::getName()
+{
+    return m_name;
+}
+
+std::string ColumnConfig::getType()
+{
+    return m_type;
+}
+
+bool ColumnConfig::isEmpty()
+{
+    return m_empty;
+}
+
+bool ColumnConfig::canHaveNull()
+{
+    return m_nullable;
+}
+
+bool ColumnConfig::isUnique()
+{
+    return m_unique;
+}
+
+bool ColumnConfig::isPrimari()
+{
+    return m_primary;
+}
+
+size_t ColumnConfig::getLength()
+{
+    return m_length;
+}
+
+size_t ColumnConfig::getCount()
+{
+    return m_count;
+}
+
+void ColumnConfig::setConfig(std::string name, bool nullable, bool unique, bool primary, size_t length, size_t count)
+{
+    m_name = name;
+    m_nullable = nullable;
+    m_unique = unique;
+    m_primary = primary;
+    m_length = length;
+    m_count = count;
 }
 
 //______________Table______________
@@ -1217,7 +1244,12 @@ std::string Table::getTableName()
     return m_tableName;
 }
 
-const std::vector<ColumnConfig>& Table::getVecColumnConfig() const
+bool Table::hasAutoIncrement()
+{
+    return m_flgAutoIncrementId;
+}
+
+const std::vector<ColumnConfig> &Table::getVecColumnConfig() const
 {
     return m_vecColumnConfig;
 }
@@ -1227,7 +1259,7 @@ const std::vector<std::vector<std::string>> &Table::getMatValues() const
     return m_matValues;
 }
 
-void Table::readColumn(Column *column)
+void Table::addColumn(Column *column)
 {
     m_vecColumnConfig.push_back(column->getConfig());
     m_matValues.push_back(column->getRows());
@@ -1243,11 +1275,17 @@ void Table::addAutoIncrementId(std::string idColumnName)
     m_flgAutoIncrementId = true;
 }
 
+void Table::addEmptyColumn(std::string columnName, std::string type, size_t length, size_t count)
+{
+    m_vecColumnConfig.push_back(ColumnConfig(columnName, type, length, count));
+    m_matValues.push_back(std::vector<std::string>());
+}
+
 void Table::showTable()
 {
     for(int i = 0; i < m_matValues.size(); i++){
         std::string shift = std::to_string(32 * i);
-        std::cout << m_vecColumnConfig[i].name << "\r\033[" + shift + "C";
+        std::cout << m_vecColumnConfig[i].getName() << "\r\033[" + shift + "C";
     }
     std::cout << std::endl;
     for(int j = 0; j < m_countRows; j++){
@@ -1285,8 +1323,56 @@ void GenSqlScript::createTable(Table table, bool overwriteTable, bool overwriteF
         m_file.open(m_fileName, std::ios::app);
     }
     if(overwriteTable){
-        m_file << "DROP TABLE IF EXISTS `" + m_dbName + "`.`" + table.getTableName() + "`;";
+        m_file << "DROP TABLE IF EXISTS `" + m_dbName + "`.`" + table.m_tableName + "`;\n\n";
     }
+    m_file << "CREATE TABLE `" + m_dbName + "`.`" + table.m_tableName + "` (\n";
+    m_file << writeColumnConf(table);
+    m_file << ");\n\n";
+    m_file.close();
+}
+
+void GenSqlScript::insertRows(Table table, size_t contRows, bool overwriteFile, bool overwriteRows)
+{
+    if(overwriteFile){
+        m_file.open(m_fileName, std::ios::trunc);
+    }else{
+        m_file.open(m_fileName, std::ios::app);
+    }
+    if(overwriteRows){
+        m_file << "TRUNCATE TABLE `" + m_dbName + "`.`" + table.m_tableName + "`;\n\n";
+    }
+    m_file << "INSERT INTO `" + m_dbName + "`.`" + table.m_tableName + "` (";
+    for(int i = 0; i < table.m_vecColumnConfig.size(); i++){
+        if(!table.m_vecColumnConfig[i].isEmpty()){
+            m_file << table.m_vecColumnConfig[i].getName();
+            if(i < table.m_vecColumnConfig.size() - 1){
+                m_file << ", ";
+            }
+        }
+    }
+    m_file << ")\nVALUES ";
+    for(size_t j = 0; j < table.m_countRows; j++){
+        m_file << "(";
+        for(size_t i = 0; i < table.m_matValues.size(); i++){
+            if(!table.m_vecColumnConfig[i].isEmpty()){
+                if(table.m_vecColumnConfig[i].getType() == "VARCHAR"){
+                    m_file << "\"";
+                }
+                m_file << table.m_matValues[i][j];
+                if(table.m_vecColumnConfig[i].getType() == "VARCHAR"){
+                    m_file << "\"";
+                }
+                if(i < table.m_matValues.size() - 1){
+                    m_file << ", ";
+                }
+            }
+        }
+        m_file << ")";
+        if(j < table.m_countRows - 1){
+            m_file << ",\n";
+        }
+    }
+    m_file << ";\n\n";
     m_file.close();
 }
 
@@ -1294,25 +1380,33 @@ std::string GenSqlScript::writeColumnConf(Table table)
 {
     std::string str;
     std::vector<ColumnConfig> vecConfig = table.getVecColumnConfig();
+    if(table.m_flgAutoIncrementId){
+        str += "`" + table.m_idColumnName + "` INT PRIMARY KEY AUTO_INCREMENT,\n"; 
+    }
     for(int i = 0; i < vecConfig.size(); i++){
-        str += "`" + vecConfig[i].name + "` " + vecConfig[i].type;
-        if(vecConfig[i].length != 0){
-            str += "(" + std::to_string(vecConfig[i].length) + ")";
-        }
-        
-        if(vecConfig[i].primaryKey){
-            str += " PRIMARY KEY";
-        }else{
-            if(!vecConfig[i].nullable){
-                str += " NOT NULL";
+        str += "`" + vecConfig[i].getName() + "` " + vecConfig[i].getType();
+        if(vecConfig[i].getLength() != 0){
+            str += "(" + std::to_string(vecConfig[i].getLength());
+            if(vecConfig[i].getCount() != 0){
+                str += ", " + std::to_string(vecConfig[i].getCount());
             }
-            if(vecConfig[i].unique){
-                str += " UNIQUE";
+            str += ")";
+        }
+        if(!vecConfig[i].isEmpty()){
+            if(vecConfig[i].isPrimari()){
+                str += " PRIMARY KEY";
+            }else{
+                if(!vecConfig[i].canHaveNull()){
+                    str += " NOT NULL";
+                }
+                if(vecConfig[i].isUnique()){
+                    str += " UNIQUE";
+                }
             }
         }
         if(i < vecConfig.size() - 1){
             str += ",\n";
         }
     }
-    return std::string();
+    return str;
 }

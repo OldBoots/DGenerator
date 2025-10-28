@@ -24,14 +24,31 @@ struct DateComponents
     int second;
 };
 
-struct ColumnConfig
+class ColumnConfig
 {
-    std::string name;
-    std::string type;
-    bool nullable;
-    bool unique;
-    bool primaryKey;
-    size_t length;
+public:
+    ColumnConfig();
+    ColumnConfig(std::string name, std::string type, size_t length = 0, size_t count = 0);
+    ColumnConfig(std::string name, std::string type, bool nullable, bool unique, bool primary, size_t length = 0, size_t count = 0);
+    std::string getName();
+    std::string getType();
+    bool isEmpty();
+    bool canHaveNull();
+    bool isUnique();
+    bool isPrimari();
+    size_t getLength();
+    size_t getCount();
+    void setConfig(std::string name, bool nullable, bool unique, bool primary, size_t length = 0, size_t count = 0);
+    friend class Column;
+protected:
+    std::string m_name;
+    std::string m_type;
+    bool m_empty;
+    bool m_nullable;
+    bool m_unique;
+    bool m_primary;
+    size_t m_length;
+    size_t m_count;
 };
 
 class Column
@@ -40,7 +57,7 @@ public:
     Column();
     Column(size_t countRows, double duplicates, bool flgShuffle, bool flgDebug);
     Column(size_t countRows, bool flgShuffle, bool flgDebug);
-    void setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length = 0);
+    void setConfig(std::string name, bool nullable, bool unique, bool primaryKey, size_t length = 0, size_t count = 0);
     void setCountRows(size_t count);
     void setDuplicate(double val);
     void setFlgShuffle(bool flg);
@@ -79,8 +96,8 @@ protected:
     std::string m_errMesage;
     std::random_device m_rd;
     std::mt19937 m_gen;
-    friend class GenString;
     ColumnConfig m_config;
+    friend class GenString;
 private:
     void calcUniqAndDupl();
 };
@@ -102,7 +119,7 @@ private:
     bool isValidProperties();
     void genValue(std::uniform_int_distribution<>& distr, std::set<int>& set, size_t& enumeration, size_t& miss, size_t maxCountMiss);
     void showDebug();
-    void setDefaultConfig();
+    
 private:
     static inline std::atomic<unsigned int> s_nextId;
     const unsigned int c_objId;
@@ -129,7 +146,7 @@ private:
     bool isValidProperties();
     void genValue(std::uniform_real_distribution<>& distr, std::set<double>& set);
     void showDebug();
-    void setDefaultConfig();
+    
 private:
     static inline std::atomic<unsigned int> s_nextId;
     const unsigned int c_objId;
@@ -159,7 +176,6 @@ private:
         size_t& minLength, std::set<std::string>& set, size_t& miss, size_t& maxCountMiss);
     void showDebug();
     bool isValidProperties();
-    void setDefaultConfig();
 private:
     static inline std::atomic<unsigned int> s_nextId;
     const unsigned int c_objId;
@@ -191,7 +207,6 @@ private:
     std::chrono::sys_seconds strToDate(const std::string& dateTime);
     bool isValidProperties();
     void showDebug();
-    void setDefaultConfig();
 private:
     static inline std::atomic<unsigned int> s_nextId;
     const unsigned int c_objId;
@@ -222,7 +237,7 @@ private:
     void showDebug();
     std::string glueString(std::vector<std::vector<std::string>>& matValues, size_t& stillRows);
     bool isValidProperties();
-    void setDefaultConfig();
+    
 private:
     static inline std::atomic<unsigned int> s_nextId;
     const unsigned int c_objId;
@@ -233,53 +248,6 @@ private:
     bool m_flgSequence;
 };
 
-class AutoIncrementId : public Column
-{
-public:
-    AutoIncrementId();
-private:
-
-};
-
-class A
-{
-public:
-    A(){}
-    virtual void method(){}
-protected:
-    
-private:
-
-};
-
-class B : public A
-{
-public:
-    B(){}
-private:
-    void method() override{}
-};
-
-class C : public B
-{
-public:
-    C(){}
-protected:
-    
-private:
-
-};
-
-class D : public B
-{
-public:
-    D(){}
-protected:
-    
-private:
-
-};
-
 class Table
 {
 public:
@@ -288,14 +256,17 @@ public:
     void setTableName(std::string tableName);
     std::string getTableName();
     std::string getIdColumnName();
+    bool hasAutoIncrement();
     const std::vector<ColumnConfig>& getVecColumnConfig() const;
     const std::vector<std::vector<std::string>>& getMatValues() const;
-    void readColumn(Column* column);
-    void addAutoIncrementId(std::string idColumnName = "id");
+    void addColumn(Column* column);
+    void addAutoIncrementId(std::string columnName = "id");
+    void addEmptyColumn(std::string columnName, std::string type, size_t length = 0, size_t count = 0);
     void showTable();
+    friend class GenSqlScript;
 private:
     void equalizeVectors();
-private:
+protected:
     std::string m_tableName;
     std::vector<ColumnConfig> m_vecColumnConfig;
     std::vector<std::vector<std::string>> m_matValues;
@@ -311,7 +282,6 @@ public:
     GenSqlScript(std::string m_dataBaseName, std::string fileName);
     void createTable(Table table, bool overwriteTable = 0, bool overwriteFile = 0);
     void insertRows(Table table, size_t contRows, bool overwriteFile = 0, bool overwriteRows = 0);
-    void clearFile();
 private:
     std::string writeColumnConf(Table table);
 private:

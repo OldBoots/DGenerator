@@ -6,3 +6,5 @@ app
 *.vscode
 # SRC files (main.cpp)
 main.cpp
+# SQL scripts
+*.sql
